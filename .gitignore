@@ -1,0 +1,27 @@
+# 本地过程记录（Word、原始截图、对话导出）不进入仓库
+课程记录/
+*.docx
+截图/
+
+# 密钥与环境变量
+.env
+.env.*
+!.env.example
+
+# 依赖与构建产物
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+dist/
+build/
+target/
+*.log
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

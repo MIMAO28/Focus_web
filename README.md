@@ -1,39 +1,36 @@
-# 生成式人工智能
+# 生成式人工智能应用基础二 · 课程项目
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+《生成式人工智能应用基础二》课程作业仓库。
 
-#### 软件架构
-软件架构说明
+## 选题
 
+**选题待定。**
 
-#### 安装教程
+待选题确认后补充：面向哪些用户、解决什么问题、计划完成的功能、可检查的验收标准。
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## 当前状态
 
-#### 使用说明
+- P01 前置设置：仓库基线与过程记录流程已建立（2026-11-15）
+- 功能代码：尚未开始
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## 目录结构
 
-#### 参与贡献
+```
+README.md          仓库说明（本文件）
+COURSEWORK.md      人机协作与过程记录规则，新对话续接时先读
+docs/dev-log.md    脱敏开发日志，按轮次追加
+```
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+## 运行方式
 
+待功能实现后补充：运行环境、依赖安装、启动方法、主要功能与注意事项。
 
-#### 特技
+## 开发过程说明
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+- 完整过程记录（Word 文档、原始截图、对话记录）**只保存在本机**，不提交到本仓库。
+- 本仓库只保存源码、必要的配置示例、README 与脱敏开发日志。
+
+## 安全约定
+
+- 不提交 API Key、账号密码、令牌、真实 `.env` 文件、私人截图。
+- 涉及密钥的配置只提交示例文件（如 `.env.example`），真实值放在本机 `.env` 中，且 `.env` 已被 `.gitignore` 排除。
