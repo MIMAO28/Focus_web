@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FOCUS! · 学习专注</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div id="toast" class="toast" hidden></div>
+
+<main id="authView" class="auth" hidden>
+  <div class="auth-poster">
+    <div class="auth-logo">FOCUS!</div>
+    <p class="auth-tag">STUDY HARD<br>COUNT EVERY<br><span class="accent-lime">MINUTE</span></p>
+    <div class="sticker sticker-a">25:00</div>
+    <div class="sticker sticker-b">DO IT</div>
+    <div class="sticker sticker-c">+1h</div>
+  </div>
+  <div class="auth-card">
+    <div class="tabs">
+      <button class="tab active" data-auth-tab="login" type="button">登录</button>
+      <button class="tab" data-auth-tab="register" type="button">注册</button>
+    </div>
+    <form id="authForm">
+      <label>邮箱
+        <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+      </label>
+      <label>密码
+        <input id="password" type="password" required minlength="6" autocomplete="current-password" placeholder="至少 6 位">
+      </label>
+      <button class="btn-primary wide" id="authSubmit" type="submit">登录</button>
+      <p class="hint" id="authHint">还没有账号？切到“注册”，用邮箱创建，数据按账号分开保存。</p>
+    </form>
+  </div>
+</main>
+
+<div id="appView" hidden>
+  <header class="topbar">
+    <div class="logo">FOCUS!</div>
+    <nav class="nav">
+      <a href="#timer">计时</a>
+      <a href="#projects">项目</a>
+      <a href="#stats">统计</a>
+    </nav>
+    <div class="user">
+      <span id="userEmail" class="user-email"></span>
+      <button id="logoutBtn" class="ghost small" type="button">退出</button>
+    </div>
+  </header>
+
+  <section class="hero" id="timer">
+    <div class="hero-copy">
+      <h1>START.<br>FOCUS.<br><span class="accent">REPEAT.</span></h1>
+      <p class="hero-sub">选一个项目，按下开始。倒计时专注，正计时自由，每一秒都记进你的账号。</p>
+      <div class="hero-badges">
+        <span class="chip">番茄钟</span>
+        <span class="chip">正计时</span>
+        <span class="chip">项目分开统计</span>
+      </div>
+    </div>
+
+    <div class="timer-card">
+      <div class="mode-tabs" id="modeTabs">
+        <button class="mode active" data-mode="countdown" type="button">倒计时</button>
+        <button class="mode" data-mode="countup" type="button">正计时</button>
+      </div>
+      <div class="digits" id="digits">25:00</div>
+      <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+      <div class="presets" id="presets">
+        <button class="preset active" data-min="25" type="button">25 分</button>
+        <button class="preset" data-min="45" type="button">45 分</button>
+        <button class="preset" data-min="60" type="button">60 分</button>
+      </div>
+      <label class="select-label">当前项目
+        <select id="projectSelect"></select>
+      </label>
+      <div class="timer-actions">
+        <button id="startBtn" class="btn-primary" type="button">开始</button>
+        <button id="resetBtn" class="ghost" type="button">重置</button>
+        <button id="saveBtn" class="btn-dark" type="button">结束并保存</button>
+      </div>
+      <p class="mini">空格 开始/暂停 · R 重置 · 倒计时归零自动保存</p>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">STAY FOCUSED · 专注每一分钟 · DEEP WORK · 项目分开统计 · 今天也要开始 · KEEP GOING · 专注每一分钟 · </div>
+  </div>
+
+  <section id="projects" class="panel">
+    <div class="panel-head">
+      <h2>学习项目</h2>
+      <div class="new-project">
+        <input id="projectName" maxlength="40" placeholder="新项目名称，例如：雅思听力">
+        <button id="addProject" class="btn-primary small" type="button">添加</button>
+      </div>
+    </div>
+    <div id="projectGrid" class="grid"></div>
+  </section>
+
+  <section id="stats" class="panel">
+    <h2>专注统计</h2>
+    <div class="stat-cards">
+      <div class="stat-card"><span class="stat-label">今天</span><strong id="todayTotal">0 分</strong></div>
+      <div class="stat-card"><span class="stat-label">本周</span><strong id="weekTotal">0 分</strong></div>
+      <div class="stat-card"><span class="stat-label">累计</span><strong id="allTotal">0 分</strong></div>
+      <div class="stat-card"><span class="stat-label">次数</span><strong id="countTotal">0</strong></div>
+    </div>
+    <h3>最近记录</h3>
+    <ul id="sessionList" class="session-list"></ul>
+  </section>
+
+  <footer class="foot">FOCUS! · 本地运行 · 数据只留在这台电脑</footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

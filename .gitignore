@@ -3,6 +3,10 @@
 *.docx
 截图/
 
+# 本机运行数据（SQLite 数据库）与自动化截图
+data/
+.screenshots/
+
 # 密钥与环境变量
 .env
 .env.*
