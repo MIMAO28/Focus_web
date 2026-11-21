@@ -15,6 +15,7 @@ const timer = {
   base: 0,
   autoSaved: false,
   tick: null,
+  projectId: null,
 };
 
 /* ---------------- 工具 ---------------- */
@@ -363,7 +364,9 @@ function renderProjects(preferredId) {
   });
 
   const ids = actives.map((p) => String(p.id));
-  if (keep && ids.includes(keep)) select.value = keep;
+  if (timer.projectId && (timer.running || timer.base > 0) && ids.includes(String(timer.projectId))) {
+    select.value = String(timer.projectId);
+  } else if (keep && ids.includes(keep)) select.value = keep;
   else if (ids.length) select.value = ids[0];
 }
 
@@ -440,6 +443,10 @@ $("renameModal").addEventListener("click", (e) => {
 
 async function archiveProject(project) {
   if (isArchived(project)) return;
+  if ((timer.running || timer.base > 0) && String(timer.projectId) === String(project.id)) {
+    toast("当前计时绑定该项目，请先结束计时");
+    return;
+  }
   if (activeProjects().length <= 1) {
     toast("至少保留一个进行中的项目");
     return;
@@ -486,6 +493,10 @@ async function restoreProject(project) {
 }
 
 async function deleteProject(project, skipConfirm = false) {
+  if ((timer.running || timer.base > 0) && String(timer.projectId) === String(project.id)) {
+    toast("当前计时绑定该项目，请先结束计时");
+    return;
+  }
   if (!skipConfirm) {
     const extra = project.count ? `该项目的 ${project.count} 次记录会一并清除，且无法恢复。` : "";
     if (!window.confirm(`彻底删除“${project.name}”？${extra}`)) return;
@@ -896,7 +907,7 @@ function persistTimer() {
         startAt: timer.startAt,
         base: timer.base,
         autoSaved: timer.autoSaved,
-        projectId: selectedProjectId(),
+        projectId: timer.projectId || selectedProjectId(),
       })
     );
   } catch (e) {
@@ -938,7 +949,8 @@ function restoreTimer() {
   });
   $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
   if (saved.projectId && projects.some((p) => String(p.id) === String(saved.projectId))) {
-    $("projectSelect").value = String(saved.projectId);
+    timer.projectId = String(saved.projectId);
+    if (activeProjects().some((p) => String(p.id) === timer.projectId)) $("projectSelect").value = timer.projectId;
   }
 
   if (timer.running) {
@@ -1005,6 +1017,14 @@ function startTimer() {
   if (timer.mode === "countdown" && currentRemaining() <= 0) {
     resetTimer();
   }
+  if (!timer.projectId) {
+    const pid = selectedProjectId();
+    if (!pid) {
+      toast("先选择一个项目");
+      return;
+    }
+    timer.projectId = pid;
+  }
   timer.running = true;
   timer.startAt = Date.now();
   clearInterval(timer.tick);
@@ -1028,19 +1048,19 @@ function resetTimer() {
   stopTimer(false);
   timer.base = 0;
   timer.autoSaved = false;
+  timer.projectId = null;
   clearTimerState();
   renderTimer();
 }
 
-async function saveFocus(seconds, auto = false) {
-  const projectId = selectedProjectId();
+async function saveFocus(seconds, auto = false, projectId = timer.projectId || selectedProjectId(), nextProjectId = null) {
   if (!projectId) {
     toast("先选择一个项目");
-    return;
+    return false;
   }
   if (seconds < 5) {
     if (!auto) toast("少于 5 秒不记录");
-    return;
+    return false;
   }
   try {
     const data = await api("/api/focus", {
@@ -1054,9 +1074,17 @@ async function saveFocus(seconds, auto = false) {
     renderStats();
     loadSessions();
     resetTimer();
+    if (nextProjectId) {
+      timer.projectId = String(nextProjectId);
+      const select = $("projectSelect");
+      if ([...select.options].some((o) => o.value === timer.projectId)) select.value = timer.projectId;
+      persistTimer();
+    }
     toast(`${auto ? "倒计时结束" : "已保存"}：${fmtDuration(seconds)} → ${data.project}`);
+    return true;
   } catch (err) {
     toast(err.message);
+    return false;
   }
 }
 
@@ -1111,22 +1139,45 @@ document.querySelectorAll("#presets [data-min]").forEach((btn) => {
   });
 });
 
-$("projectSelect").addEventListener("change", persistTimer);
-let pausedAway = false;
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    if (timer.running) {
-      stopTimer(true);
-      pausedAway = true;
-    }
+$("projectSelect").addEventListener("change", async () => {
+  const select = $("projectSelect");
+  const nextId = select.value || null;
+  const bound = timer.projectId;
+  const pending = timer.running || elapsed() > 0;
+  if (!pending || !bound || String(bound) === String(nextId)) {
+    timer.projectId = nextId;
     persistTimer();
     return;
   }
-  if (pausedAway) {
-    pausedAway = false;
-    toast("已自动暂停（离开页面）");
+  const boundProject = projects.find((p) => String(p.id) === String(bound));
+  const ok = window.confirm(
+    `当前计时绑定在「${boundProject ? boundProject.name : "原项目"}」。\n切换项目会先结束并保存这条记录，继续吗？`
+  );
+  if (!ok) {
+    select.value = String(bound);
+    return;
+  }
+  const secs = Math.floor(timer.mode === "countdown" && timer.autoSaved ? timer.target : elapsed());
+  stopTimer(true);
+  if (secs < 5) {
+    timer.base = 0;
+    timer.autoSaved = false;
+    timer.projectId = nextId;
+    clearTimerState();
+    renderTimer();
+    persistTimer();
+    toast("记录不足 5 秒，未保存");
+    return;
+  }
+  const saved = await saveFocus(secs, false, bound, nextId);
+  if (!saved) {
+    select.value = String(bound);
+    timer.projectId = bound;
+    persistTimer();
   }
 });
+
+document.addEventListener("visibilitychange", persistTimer);
 window.addEventListener("beforeunload", persistTimer);
 
 document.addEventListener("keydown", (e) => {
