@@ -380,4 +380,25 @@
 - 累加：倒计时约 8 秒 → 切换正计时显示约 8 秒 → 再跑 3 秒 → 保存记录 11 秒，项目/今日/本周/累计均为 11 秒。
 - 部署：提交 ad8b008，Actions `completed / success`。
 
+## P25 引言字体与随机轮换
+
+**用户要求**：引言条字体太low、与整站风格不一致；每条鸡汤要每次进站/登录都不同。
+
+**改动**
+
+1. 引言改用 Noto Serif SC 700（Google Fonts），去掉伪斜体；大引号装饰 + 右侧 `01 / 12` 编号，与全站硬边框风格统一。
+2. 内置 12 条中文语录；`pickQuote()` 于启动与登录时各抽一次。
+3. 用 `localStorage("focus.quote.last")` 记录上一条，抽到相同则顺延一条，保证不会连续重复。
+
+**验证**
+
+- 首开 `12 / 12`、刷新 `02 / 12`、登录后 `08 / 12`，三次文本与编号均不同。
+- 计算样式 `font-family: "Noto Serif SC", ...`、`font-weight: 700`、`font-style: normal`；`document.fonts.check` 为 true。
+- 引言条无裁切、无横向溢出，控制台无报错。
+- 部署：提交 c578ede，Actions `completed / success`。
+
+**注意**
+
+- 依赖 Google Fonts；网络不可达时回退到 Source Han Serif / 宋体。
+
 
