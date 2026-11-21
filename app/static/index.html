@@ -7,7 +7,7 @@
 <title>FOCUS! · 学习专注</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&family=Instrument+Serif:ital@0;1&family=Noto+Serif+SC:wght@600;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -104,8 +104,16 @@
   </section>
 
   <section class="quote">
-    <p class="quote-text">“你不需要更多时间，<em>你只需要更少分心。</em>”</p>
-    <span class="quote-by">FOCUS! DAILY NOTE</span>
+    <div class="quote-inner">
+      <span class="quote-mark" aria-hidden="true">“</span>
+      <div class="quote-body">
+        <p class="quote-text" id="quoteText">你不需要更多时间，你只需要更少分心。</p>
+        <div class="quote-meta">
+          <span>FOCUS! DAILY NOTE</span>
+          <span id="quoteNo" class="quote-no">01 / 12</span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section id="projects" class="panel">

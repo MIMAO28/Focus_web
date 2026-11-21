@@ -160,6 +160,7 @@ function enterApp(me) {
   $("appView").hidden = false;
   $("userEmail").textContent = me.email;
   $("resendBtn").hidden = true;
+  pickQuote();
   renderProjects();
   renderStats();
   loadSessions();
@@ -639,9 +640,46 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+/* ---------------- 每日鸡汤 ---------------- */
+const QUOTES = [
+  "你不需要更多时间，你只需要更少分心。",
+  "专注不是天赋，是一次次把注意力拿回来。",
+  "今天的二十五分钟，胜过明天的三小时。",
+  "慢一点没关系，别停下来。",
+  "你不是在熬时间，你是在攒未来的底气。",
+  "先把眼前这一句看完，再谈远方。",
+  "注意力在哪，成果就在哪。",
+  "别人刷到的是热闹，你练到的是本事。",
+  "坐下来的那一刻，你已经赢了一半。",
+  "不用等状态好，开始之后状态才来。",
+  "每一段认真，都会在某天替你说话。",
+  "把手机放远一点，把目标放近一点。",
+];
+
+function pickQuote() {
+  if (!QUOTES.length) return;
+  let last = -1;
+  try {
+    const stored = Number(localStorage.getItem("focus.quote.last"));
+    if (Number.isInteger(stored) && stored >= 0 && stored < QUOTES.length) last = stored;
+  } catch (e) {
+    /* 隐私模式忽略 */
+  }
+  let i = Math.floor(Math.random() * QUOTES.length);
+  if (i === last) i = (i + 1) % QUOTES.length;
+  $("quoteText").textContent = QUOTES[i];
+  $("quoteNo").textContent = String(i + 1).padStart(2, "0") + " / " + String(QUOTES.length).padStart(2, "0");
+  try {
+    localStorage.setItem("focus.quote.last", String(i));
+  } catch (e) {
+    /* 忽略 */
+  }
+}
+
 /* ---------------- 启动 ---------------- */
 (async function boot() {
   setAuthMode("login");
+  pickQuote();
   renderTimer();
   if (window.FocusCloudReady) {
     try {
