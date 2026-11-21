@@ -63,6 +63,7 @@
       <a class="logo" href="#timer">FOCUS<span>!</span></a>
       <nav class="nav" aria-label="页面切换">
         <a href="#timer" class="active" aria-current="page">计时</a>
+        <a href="#todo">待办</a>
         <a href="#stats">统计</a>
       </nav>
       <div class="user">
@@ -136,21 +137,6 @@
     </div>
   </section>
 
-  <section id="todos" class="panel todo-panel">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow">TODAY'S LIST</span>
-        <h2>待办清单</h2>
-      </div>
-      <div class="new-project todo-add">
-        <input id="todoInput" maxlength="60" placeholder="添加一件待办，例如：精听一篇 TED">
-        <button id="todoAdd" class="btn-primary small" type="button">添加</button>
-      </div>
-    </div>
-    <ul id="todoList" class="todo-list"></ul>
-    <p id="todoEmpty" class="todo-empty">还没有待办，先写下今天要做的一件事。</p>
-  </section>
-
   <section id="projects" class="panel">
     <div class="section-head">
       <div>
@@ -176,6 +162,23 @@
       <div class="step"><span class="step-no">02</span><h3>按下开始</h3><p>倒计时 25 分钟，或正计时自由专注。</p></div>
       <div class="step"><span class="step-no">03</span><h3>自动入账</h3><p>结束即保存，今天、本周、累计都能看到。</p></div>
     </div>
+  </section>
+  </div>
+
+  <div id="view-todo" class="view" hidden>
+  <section id="todos" class="panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">TODAY'S LIST</span>
+        <h2>待办清单</h2>
+      </div>
+      <div class="new-project todo-add">
+        <input id="todoInput" maxlength="60" placeholder="添加一件待办，例如：精听一篇 TED">
+        <button id="todoAdd" class="btn-primary small" type="button">添加</button>
+      </div>
+    </div>
+    <div id="todoList" class="grid"></div>
+    <p id="todoEmpty" class="todo-empty">还没有待办，先写下今天要做的一件事。</p>
   </section>
   </div>
 

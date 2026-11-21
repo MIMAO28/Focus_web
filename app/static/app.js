@@ -163,7 +163,7 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "stats"];
+const VIEWS = ["timer", "todo", "stats"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
@@ -638,8 +638,11 @@ function renderTodos() {
   list.textContent = "";
   $("todoEmpty").hidden = todos.length > 0;
   todos.forEach((todo, index) => {
-    const li = document.createElement("li");
-    li.className = "todo-item" + (todo.done ? " done" : "");
+    const card = document.createElement("article");
+    card.className = "todo-card" + (todo.done ? " done" : "");
+
+    const head = document.createElement("div");
+    head.className = "todo-card-head";
 
     const label = document.createElement("label");
     label.className = "todo-check";
@@ -656,7 +659,7 @@ function renderTodos() {
     box.className = "todo-box";
     label.append(input, box);
 
-    const text = document.createElement("span");
+    const text = document.createElement("h3");
     text.className = "todo-text";
     text.textContent = todo.text;
 
@@ -671,8 +674,14 @@ function renderTodos() {
       renderTodos();
     });
 
-    li.append(label, text, del);
-    list.appendChild(li);
+    head.append(label, text, del);
+
+    const meta = document.createElement("div");
+    meta.className = "todo-meta";
+    meta.textContent = todo.done ? "已完成" : "未完成";
+
+    card.append(head, meta);
+    list.appendChild(card);
   });
 }
 
