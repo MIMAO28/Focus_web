@@ -235,4 +235,44 @@
 - 登出会丢弃未保存的计时（有意的安全处理）。
 - 跨设备仍需导出/导入备份；若要自动同步，下一步接 Supabase。
 
+---
+
+## P13 · 2026-11-21 · 接入 Supabase 云端同步（代码完成，待建表启用）
+
+**阶段**：架构升级
+
+**方案**
+
+- 账号：Supabase Auth（邮箱 + 密码），跨设备登录同一邮箱。
+- 数据：`focus_projects`、`focus_sessions` 两张表；开启 RLS，`auth.uid() = user_id` 才能读写。
+- 前端：新增 `deploy/static/cloud-api.js`，用 REST（`/auth/v1`、`/rest/v1`）实现与本地版相同的接口；`app.js` 优先云端、其次本地、最后本机 FastAPI。
+- 构建：`deploy/cloud-config.json` 存在时注入云端脚本；不存在时保持本地版，线上不受影响。
+
+**新增 / 修改文件**
+
+- `deploy/supabase/schema.sql`（建表 + 索引 + RLS + 授权）
+- `deploy/static/cloud-api.js`（约 350 行）
+- `deploy/build_pages.py`（按配置切换云端/本地）
+- `app/static/app.js`（三模式优先、云端文案、UUID 项目 id、邮箱确认提示）
+- `app/main.py`（本机版补修改密码接口）
+
+**事实核对**
+
+- Supabase 项目可达，邮箱登录开启，`mailer_autoconfirm=false`（注册需点确认邮件）。
+- REST 查询 `focus_projects` 返回 `PGRST205`：表尚未创建。
+- 认证接口可达（错误凭据返回 400）。
+
+**验证**
+
+- 本地静态版回归：注册、建项目、倒计时、保存、账号区（修改密码 + 备份卡）、退出，全部 PASS，无控制台报错。
+
+**提交**
+
+- e4163e4 P13 接入 Supabase 云端同步（待启用配置）
+
+**下一步**
+
+- 本人在 Supabase SQL Editor 执行 `deploy/supabase/schema.sql`。
+- 之后添加 `deploy/cloud-config.json`，重新构建发布，验证跨浏览器/跨设备同步。
+
 
