@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "app", "static")
 COOKIE_NAME = "focus_sid"
 SESSION_DAYS = 30
+SECURE_COOKIE = os.getenv("FOCUS_SECURE_COOKIE", "0") == "1"
 PALETTE = ["#FF3B2F", "#C6FF3D", "#FFD166", "#7BD389", "#8AB6FF", "#FF8FC7"]
 
 app = FastAPI(title="FOCUS! 学习专注")
@@ -83,7 +84,12 @@ def begin_session(conn, user_id, response: Response):
     )
     conn.commit()
     response.set_cookie(
-        COOKIE_NAME, token, max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax"
+        COOKIE_NAME,
+        token,
+        max_age=SESSION_DAYS * 86400,
+        httponly=True,
+        samesite="lax",
+        secure=SECURE_COOKIE,
     )
 
 

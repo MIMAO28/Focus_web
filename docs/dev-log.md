@@ -138,3 +138,30 @@
 
 - P07：计时状态刷新续接、番茄循环（专注/休息）、按项目周视图图表。
 
+---
+
+## P09 · 2026-11-21 · GitHub 托管与公网部署准备
+
+**阶段**：部署准备
+
+**目标**：按本人要求把代码托管到 GitHub，并给出可关机访问的公网部署路径。
+
+**实际操作**
+
+1. 核对 GitHub 仓库 `https://github.com/MIMAO28/Focus_web`：为空仓库（无任何引用）。
+2. 本机未安装 GitHub CLI；直接用 HTTPS 远程推送成功，新增远程 `github`，`master` 推送至 `da630d9`，远端核对一致（仓库为公开）。
+3. 事实确认：GitHub Pages 仅托管静态文件，无法运行 FastAPI 与 SQLite，因此不能用 Pages 上线本网站。
+4. 新增 `deploy/pythonanywhere_wsgi.py`（ASGI→WSGI 适配入口与操作注释）。
+5. `app/main.py` 支持 `FOCUS_SECURE_COOKIE=1`，HTTPS 下 Cookie 带 `Secure`。
+6. README 增加“公网部署”：PythonAnywhere 免费版步骤、Oracle Always Free 方案、不建议的 Render 免费实例原因与安全提醒。
+7. 重启本地服务验证：首页 200、注册接口正常；随后清空测试账号。
+
+**提交**
+
+- 本条与部署文件、README 一并提交（见 Word P09 记录）
+
+**下一步**
+
+- 本人在 PythonAnywhere 注册并按 README 部署；我负责 WSGI 路径、环境变量与公网验证。
+
+

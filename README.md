@@ -13,7 +13,8 @@
 
 - P01–P05：仓库、过程记录与规则建立（P05 撤销过一次选题）
 - P06：基础版功能已实现并通过接口与浏览器实测
-- 后续：计时状态刷新续接、番茄循环（专注/休息）、图表、导出等
+- P09：代码已同步到 GitHub；补充公网部署入口与说明
+- 后续：公网部署（PythonAnywhere / Oracle）、计时刷新续接、番茄循环、图表
 
 ## 功能（基础版）
 
@@ -37,6 +38,42 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 浏览器打开 <http://127.0.0.1:8000>，注册邮箱账号（密码至少 6 位）即可使用。
+
+## 公网部署
+
+代码已托管到 GitHub：<https://github.com/MIMAO28/Focus_web>（Gitee 同步维护）。
+
+**GitHub Pages 不能直接上线本网站**：Pages 只托管静态文件，没有 Python 运行时与数据库，无法运行 FastAPI 与 SQLite。
+
+### 方案 A：PythonAnywhere 免费版（改动最小，数据持久）
+
+1. 注册 <https://www.pythonanywhere.com>，打开 Bash 控制台执行：
+
+```bash
+git clone https://github.com/MIMAO28/Focus_web.git
+mkvirtualenv focus --python=/usr/bin/python3.10
+pip install -r Focus_web/requirements.txt a2wsgi
+```
+
+2. Web 标签 → Add a new web app → Manual configuration → Python 3.10。
+3. 把 `deploy/pythonanywhere_wsgi.py` 的内容贴进 WSGI 配置文件，并把 `PROJECT_DIR` 改成 `/home/<用户名>/Focus_web`。
+4. 在 Web 标签的环境变量里加 `FOCUS_SECURE_COOKIE=1`。
+5. 点 Reload，访问 `https://<用户名>.pythonanywhere.com`。
+
+数据库保存在 `Focus_web/data/focus.db`，PythonAnywhere 磁盘持久；免费账号有每日 CPU 配额。
+
+### 方案 B：Oracle Cloud Always Free 虚拟机
+
+创建免费 VM → 安装 Python 与 Nginx → `git clone` 本仓库 → 建虚拟环境装依赖 → `uvicorn` 监听 `127.0.0.1:8000` → Nginx 反向代理 → 用域名申请 HTTPS 证书。适合需要自定义域名、长期稳定的情况。
+
+### 不建议
+
+- Render 免费实例：闲置休眠、磁盘临时，SQLite 数据会在重启或重新部署后丢失。
+- Vercel / Netlify / Cloudflare Pages：只能托管静态页，跑不了本项目的后端。
+
+### 公网安全提醒
+
+公开注册入口后建议加邀请码或限流、限制密码尝试次数；HTTPS 下务必设置 `FOCUS_SECURE_COOKIE=1`，Cookie 才会带 `Secure`。
 
 ## 目录结构
 
