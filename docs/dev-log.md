@@ -401,4 +401,27 @@
 
 - 依赖 Google Fonts；网络不可达时回退到 Source Han Serif / 宋体。
 
+## P26 引言缓存修复、展示字体与 30 条语录
+
+**用户反馈**：仍看到旧字体；希望语录更多且保持随机抽取。
+
+**定位**
+
+- 线上 JS 已是新版（编号 `01 / 12` 可见），但样式仍是旧版（居中、伪斜体、无大引号）→ 浏览器缓存了旧 `styles.css`。
+- 仅换字体无法解决，必须先做缓存失效。
+
+**改动**
+
+1. `deploy/build_pages.py` 注入版本号：`styles.css?v=<GITHUB_SHA>`、`app.js?v=<sha>`；本地构建用时间戳。
+2. `index.html` 增加 `Cache-Control/Pragma/Expires` 禁止缓存 meta。
+3. 引言字体改为 `ZCOOL QingKe HuangYou`（站酷庆科黄油体，展示型中文标题字），回退 Noto Sans SC/微软雅黑。
+4. 语录从 12 条扩到 30 条，抽取逻辑不变（localStorage 防连续重复）。
+
+**验证**
+
+- 本地首开 `30 / 30`、刷新 `20 / 30`、登录 `28 / 30`，三次不同。
+- 计算字体 `ZCOOL QingKe HuangYou` / 400 / normal；带实际文本的 `fonts.check` 为 true，字族 92 个 @font-face 中已加载 6 个使用中切片。
+- 布局：左引号、正文、右下编号无重叠，无横向溢出。
+- 首次线上部署 `deploy-pages` 失败（前 6 步 success），需重跑后复核。
+
 
