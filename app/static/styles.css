@@ -364,6 +364,51 @@ button, input, select { font-family: inherit; }
 .session-list .muted { color: var(--muted); font-size: 12px; }
 .empty { color: var(--muted); font-size: 14px; }
 
+.panel-note { color: var(--muted); font-size: 14px; line-height: 1.7; margin: -10px 0 24px; }
+.account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.tool-card {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.tool-card h3 { color: var(--cream); font-size: 16px; letter-spacing: 0; margin-bottom: 14px; }
+.tool-card label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.tool-card input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  background: var(--bg);
+  color: var(--cream);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 14px;
+  outline: none;
+}
+.tool-card input:focus { border-color: var(--red); }
+.tool-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.file-btn {
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--cream);
+  cursor: pointer;
+}
+.file-btn:hover { border-color: var(--cream); }
+
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted) !important;
+  font-size: 13px;
+  margin: -4px 0 18px !important;
+}
+.check input { width: auto !important; margin: 0 !important; accent-color: var(--red); }
+
 .foot { padding: 30px 40px 50px; color: var(--muted); font-size: 12px; border-top: 2px solid var(--line); }
 
 /* ---------- 提示 ---------- */

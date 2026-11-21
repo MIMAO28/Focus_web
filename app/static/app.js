@@ -109,6 +109,10 @@ document.querySelectorAll("[data-auth-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setAuthMode(btn.dataset.authTab));
 });
 
+$("showPwd").addEventListener("change", (e) => {
+  $("password").type = e.target.checked ? "text" : "password";
+});
+
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("email").value.trim();
@@ -146,11 +150,14 @@ function enterApp(me) {
   renderProjects();
   renderStats();
   loadSessions();
+  setupAccountPanel();
+  restoreTimer();
   renderTimer();
 }
 
 $("logoutBtn").addEventListener("click", async () => {
-  stopTimer();
+  resetTimer();
+  clearTimerState();
   try {
     await api("/api/logout", { method: "POST" });
   } catch (e) {
@@ -158,6 +165,68 @@ $("logoutBtn").addEventListener("click", async () => {
   }
   showAuth();
   toast("已退出登录");
+});
+
+/* ---------------- 账号与数据 ---------------- */
+const isLocalMode = () => typeof window.FocusLocalApi === "function";
+
+function setupAccountPanel() {
+  const local = isLocalMode();
+  $("localTools").hidden = !local;
+  $("storageNote").textContent = local
+    ? "账号、项目与专注记录保存在当前浏览器（localStorage）。换设备或清缓存前，请先“导出备份”，在新设备“导入备份”。"
+    : "账号与专注记录保存在本机服务端 data/focus.db。停止本机服务后网站不可访问，数据仍保留在磁盘。";
+}
+
+$("passwordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("/api/password", {
+      method: "POST",
+      body: JSON.stringify({
+        old_password: $("oldPassword").value,
+        new_password: $("newPassword").value,
+      }),
+    });
+    $("oldPassword").value = "";
+    $("newPassword").value = "";
+    toast("密码已修改，下次登录用新密码");
+  } catch (err) {
+    toast(err.message);
+  }
+});
+
+$("exportBtn").addEventListener("click", () => {
+  if (!isLocalMode()) return;
+  const text = window.FocusLocalApi.exportData();
+  if (!text) {
+    toast("还没有可导出的数据");
+    return;
+  }
+  const blob = new Blob([text], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `focus-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  toast("备份已导出");
+});
+
+$("importFile").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file || !isLocalMode()) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const result = window.FocusLocalApi.importData(String(reader.result));
+      toast(`已导入 ${result.users} 个账号，正在刷新`);
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      toast(err.message);
+    }
+  };
+  reader.readAsText(file, "utf-8");
+  e.target.value = "";
 });
 
 /* ---------------- 项目 ---------------- */
@@ -327,6 +396,84 @@ async function loadSessions() {
 }
 
 /* ---------------- 计时 ---------------- */
+function timerKey() {
+  return user ? `focus.timer.v1:${user.email}` : null;
+}
+
+function persistTimer() {
+  const key = timerKey();
+  if (!key) return;
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        mode: timer.mode,
+        target: timer.target,
+        running: timer.running,
+        startAt: timer.startAt,
+        base: timer.base,
+        autoSaved: timer.autoSaved,
+        projectId: selectedProjectId(),
+      })
+    );
+  } catch (e) {
+    /* 存储失败不影响计时 */
+  }
+}
+
+function clearTimerState() {
+  const key = timerKey();
+  if (key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      /* 忽略 */
+    }
+  }
+}
+
+function restoreTimer() {
+  const key = timerKey();
+  if (!key) return;
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(key) || "null");
+  } catch (e) {
+    saved = null;
+  }
+  if (!saved || !["countdown", "countup"].includes(saved.mode)) return;
+
+  timer.mode = saved.mode;
+  timer.target = Math.min(Math.max(Number(saved.target) || 1500, 60), 86400);
+  timer.base = Math.max(0, Number(saved.base) || 0);
+  timer.running = !!saved.running;
+  timer.startAt = Number(saved.startAt) || 0;
+  timer.autoSaved = !!saved.autoSaved;
+
+  document.querySelectorAll("[data-mode]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.mode === timer.mode);
+  });
+  $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
+  if (saved.projectId && projects.some((p) => p.id === Number(saved.projectId))) {
+    $("projectSelect").value = String(saved.projectId);
+  }
+
+  if (timer.running) {
+    if (!timer.startAt) timer.startAt = Date.now();
+    clearInterval(timer.tick);
+    timer.tick = setInterval(tick, 200);
+  }
+  if (timer.mode === "countdown" && elapsed() >= timer.target) {
+    clearInterval(timer.tick);
+    timer.tick = null;
+    timer.base = timer.target;
+    timer.running = false;
+    timer.autoSaved = true;
+    toast("上次倒计时已结束，点“结束并保存”入账");
+  }
+  renderTimer();
+}
+
 function elapsed() {
   return timer.base + (timer.running ? (Date.now() - timer.startAt) / 1000 : 0);
 }
@@ -366,6 +513,7 @@ function startTimer() {
     clearInterval(timer.tick);
     timer.tick = null;
     renderTimer();
+    persistTimer();
     return;
   }
   if (timer.mode === "countdown" && currentRemaining() <= 0) {
@@ -376,6 +524,7 @@ function startTimer() {
   clearInterval(timer.tick);
   timer.tick = setInterval(tick, 200);
   renderTimer();
+  persistTimer();
 }
 
 function stopTimer(keepElapsed = true) {
@@ -393,6 +542,7 @@ function resetTimer() {
   stopTimer(false);
   timer.base = 0;
   timer.autoSaved = false;
+  clearTimerState();
   renderTimer();
 }
 
@@ -463,6 +613,12 @@ document.querySelectorAll("[data-min]").forEach((btn) => {
     renderTimer();
   });
 });
+
+$("projectSelect").addEventListener("change", persistTimer);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) persistTimer();
+});
+window.addEventListener("beforeunload", persistTimer);
 
 document.addEventListener("keydown", (e) => {
   if ($("appView").hidden) return;

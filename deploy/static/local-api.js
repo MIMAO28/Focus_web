@@ -21,9 +21,8 @@
   function save(state) {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
-      return true;
     } catch (e) {
-      return false;
+      fail("浏览器存储失败（可能空间不足），请先导出备份再清理", 500);
     }
   }
 
@@ -160,7 +159,7 @@
         sessions: [],
       };
       state.current = email;
-      if (!save(state)) fail("浏览器存储不可用，无法保存账号", 500);
+      save(state);
       return me(state.users[email]);
     }
 
@@ -178,6 +177,19 @@
 
     if (path === "/api/logout" && method === "POST") {
       state.current = null;
+      save(state);
+      return { ok: true };
+    }
+
+    if (path === "/api/password" && method === "POST") {
+      need();
+      const oldPwd = String(body.old_password || "");
+      const newPwd = String(body.new_password || "");
+      if (newPwd.length < 6) fail("新密码至少 6 位");
+      const oldHash = await hashPassword(oldPwd, user.salt);
+      if (oldHash !== user.hash) fail("当前密码不正确", 403);
+      user.salt = randomSalt();
+      user.hash = await hashPassword(newPwd, user.salt);
       save(state);
       return { ok: true };
     }
@@ -271,5 +283,31 @@
     }
 
     fail("接口不存在", 404);
+  };
+
+  window.FocusLocalApi.exportData = () => localStorage.getItem(KEY) || "";
+
+  window.FocusLocalApi.importData = (text) => {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      fail("备份文件不是合法 JSON");
+    }
+    if (!data || typeof data.users !== "object" || !data.users) fail("备份内容不完整");
+    const emails = Object.keys(data.users);
+    if (!emails.length) fail("备份里没有账号");
+    emails.forEach((email) => {
+      const item = data.users[email];
+      if (!item || !item.salt || !item.hash || !Array.isArray(item.projects) || !Array.isArray(item.sessions)) {
+        fail("备份格式不正确");
+      }
+    });
+    try {
+      localStorage.setItem(KEY, text);
+    } catch (e) {
+      fail("导入失败：浏览器存储空间不足", 500);
+    }
+    return { ok: true, users: emails.length };
   };
 })();

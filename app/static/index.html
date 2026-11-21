@@ -29,6 +29,7 @@
       <label>密码
         <input id="password" type="password" required minlength="6" autocomplete="current-password" placeholder="至少 6 位">
       </label>
+      <label class="check"><input id="showPwd" type="checkbox"> 显示密码</label>
       <button class="btn-primary wide" id="authSubmit" type="submit">登录</button>
       <p class="hint" id="authHint">还没有账号？切到“注册”，用邮箱创建，数据按账号分开保存。</p>
     </form>
@@ -42,6 +43,7 @@
       <a href="#timer">计时</a>
       <a href="#projects">项目</a>
       <a href="#stats">统计</a>
+      <a href="#account">账号</a>
     </nav>
     <div class="user">
       <span id="userEmail" class="user-email"></span>
@@ -109,6 +111,31 @@
     </div>
     <h3>最近记录</h3>
     <ul id="sessionList" class="session-list"></ul>
+  </section>
+
+  <section id="account" class="panel">
+    <h2>账号与数据</h2>
+    <p class="panel-note" id="storageNote"></p>
+    <div class="account-grid" id="localTools" hidden>
+      <form id="passwordForm" class="tool-card">
+        <h3>修改密码</h3>
+        <label>当前密码
+          <input id="oldPassword" type="password" autocomplete="current-password">
+        </label>
+        <label>新密码
+          <input id="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="至少 6 位">
+        </label>
+        <button class="btn-primary small" type="submit">保存新密码</button>
+      </form>
+      <div class="tool-card">
+        <h3>备份与恢复</h3>
+        <p class="mini">导出会把当前浏览器里的账号与专注记录打包成 JSON；换设备后导入即可继续用。</p>
+        <div class="tool-actions">
+          <button id="exportBtn" class="ghost small" type="button">导出备份</button>
+          <label class="file-btn">导入备份<input id="importFile" type="file" accept="application/json,text/plain" hidden></label>
+        </div>
+      </div>
+    </div>
   </section>
 
   <footer class="foot">FOCUS! · 本地运行 · 数据只留在这台电脑</footer>
