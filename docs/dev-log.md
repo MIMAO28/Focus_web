@@ -605,3 +605,31 @@ Pages 部署 success，线上含 detailModal 与 archivedBox。
 - `d67b525` P33 计时绑定项目并取消切页暂停
 
 Pages 部署 success，线上文案与绑定逻辑已确认。
+
+## P34 待办清单、注册用户名与自定义倒计时
+
+**需求**
+
+1. 待办清单：可添加，左侧小框，完成勾选后变非强调色，未完成用强调色。
+2. 注册时可设置用户名，右上角显示用户名而不是邮箱。
+3. 倒计时支持自定义时长。
+
+**实现**
+
+1. 主页新增 `#todos` 区块：添加/勾选/删除，未完成 `var(--red)`、完成 `var(--muted)` + 删除线；按账号存 `localStorage["focus.todos.v1:<email>"]`。
+2. 注册页新增 `#username`（2-20 字符），仅注册显示；`enterApp` 优先显示 `me.username`，悬停显示邮箱，旧账号回退邮箱前缀。
+3. 三套后端支持 username：local-api 存用户对象；cloud-api 注册写 `data.username` 并从 `user_metadata` 读取；FastAPI users 表新增列并在启动时 ALTER TABLE 兼容旧库。
+4. 倒计时新增自定义分钟输入（1-600），支持按钮/回车，计时中拦截，正计时隐藏，命中预设时同步高亮。
+
+**验证（Edge）**
+
+- 空用户名被拦截；注册“小专注”后右上角显示“小专注”、title 为邮箱，刷新保持。
+- 待办 2 条，未完成 rgb(118,98,36)，勾选后 done 类、rgba(26,22,10,0.66)、line-through；删除与刷新持久化正常。
+- 自定义 12 分钟读数 12:00、target=720；计时中设置 15 被拦截；暂停后 15:00；正计时隐藏。
+- 控制台 0 错误。
+
+**提交**
+
+- `037bdba` P34 待办清单、注册用户名与自定义倒计时
+
+Pages 部署 success，线上含 todoList、usernameField、customMin。
