@@ -178,13 +178,28 @@
       </div>
     </div>
     <div class="chart-card streak-card">
-      <div class="chart-head"><h3>连续打卡</h3><span id="streakNote" class="chart-sub"></span></div>
-      <div class="streak-value"><strong id="streakDays">0</strong><span>天</span></div>
-      <div id="heatmap" class="heatmap"></div>
-      <div class="heat-legend">
-        <span>少</span>
-        <i class="heat-cell h0"></i><i class="heat-cell h1"></i><i class="heat-cell h2"></i><i class="heat-cell h3"></i><i class="heat-cell h4"></i>
-        <span>多</span>
+      <div class="chart-head"><h3>连续打卡</h3><span class="chart-sub">近 8 周</span></div>
+      <div class="streak-layout">
+        <div class="streak-side">
+          <div class="streak-value"><strong id="streakDays">0</strong><span>天</span></div>
+          <p id="streakNote" class="streak-hint"></p>
+        </div>
+        <div class="heat-block">
+          <div id="heatMonths" class="heat-months" aria-hidden="true"></div>
+          <div class="heat-body">
+            <div class="heat-days" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+            <div id="heatmap" class="heatmap" role="img" aria-label="近 8 周专注热力图"></div>
+          </div>
+          <div class="heat-legend">
+            <span>少</span>
+            <i class="heat-cell h0"></i><i class="heat-cell h1"></i><i class="heat-cell h2"></i><i class="heat-cell h3"></i><i class="heat-cell h4"></i>
+            <span>多</span>
+          </div>
+        </div>
+        <div class="heat-stats">
+          <div><strong id="heatDays">0</strong><span>天有记录</span></div>
+          <div><strong id="heatMinutes">0</strong><span>分钟累计</span></div>
+        </div>
       </div>
     </div>
     <div class="ledger">

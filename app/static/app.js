@@ -523,15 +523,59 @@ function heatmapOf(items, nowMs, createdAtSec) {
   return cells;
 }
 
+function ghostWeek() {
+  const box = document.createElement("div");
+  box.className = "ghost-week";
+  box.setAttribute("aria-hidden", "true");
+  [26, 48, 32, 64, 40, 72, 30].forEach((h) => {
+    const bar = document.createElement("i");
+    bar.className = "ghost-bar";
+    bar.style.setProperty("--h", h + "%");
+    box.appendChild(bar);
+  });
+  return box;
+}
+
+function ghostShare() {
+  const box = document.createElement("div");
+  box.className = "ghost-share";
+  box.setAttribute("aria-hidden", "true");
+  [62, 38, 22].forEach((w) => {
+    const row = document.createElement("div");
+    row.className = "ghost-share-row";
+    const dot = document.createElement("i");
+    dot.className = "ghost-dot";
+    const track = document.createElement("span");
+    track.className = "ghost-track";
+    const fill = document.createElement("i");
+    fill.style.setProperty("--w", w + "%");
+    track.appendChild(fill);
+    row.append(dot, track);
+    box.appendChild(row);
+  });
+  return box;
+}
+
+function emptyState(ghost, text) {
+  const wrap = document.createElement("div");
+  wrap.className = "empty-state";
+  const p = document.createElement("p");
+  p.textContent = text;
+  const cta = document.createElement("a");
+  cta.className = "link-cta";
+  cta.href = "#timer";
+  cta.textContent = "去计时";
+  wrap.append(ghost, p, cta);
+  return wrap;
+}
+
 function renderWeekChart(rows) {
   const box = $("weekChart");
   box.textContent = "";
   const max = Math.max(...rows.map((r) => r.minutes), 0);
+  box.classList.toggle("is-empty", !max);
   if (!max) {
-    const p = document.createElement("p");
-    p.className = "chart-empty";
-    p.textContent = "最近 7 天还没有记录，开始第一段专注吧。";
-    box.appendChild(p);
+    box.appendChild(emptyState(ghostWeek(), "最近 7 天还没有记录"));
     return;
   }
   rows.forEach((r) => {
@@ -560,11 +604,9 @@ function renderWeekChart(rows) {
 function renderTodayShare(share) {
   const box = $("todayShare");
   box.textContent = "";
+  box.classList.toggle("is-empty", !share.items.length);
   if (!share.items.length) {
-    const p = document.createElement("p");
-    p.className = "chart-empty";
-    p.textContent = "今天还没有记录，先开始一段专注。";
-    box.appendChild(p);
+    box.appendChild(emptyState(ghostShare(), "今天还没有项目记录"));
     return;
   }
   share.items.forEach((it) => {
@@ -595,6 +637,19 @@ function renderStreak(streak, cells) {
     : streak.days
     ? "今天还没开始"
     : "今天开始第一段吧";
+  const months = $("heatMonths");
+  months.textContent = "";
+  let lastMonth = -1;
+  for (let w = 0; w < 8; w++) {
+    const span = document.createElement("span");
+    const month = cells[w * 7].date.getMonth();
+    if (month !== lastMonth) span.textContent = `${month + 1}月`;
+    lastMonth = month;
+    months.appendChild(span);
+  }
+  const active = cells.filter((c) => c.minutes > 0);
+  $("heatDays").textContent = String(active.length);
+  $("heatMinutes").textContent = String(cells.reduce((sum, c) => sum + c.minutes, 0));
   const box = $("heatmap");
   box.textContent = "";
   cells.forEach((c) => {
