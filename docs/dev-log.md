@@ -446,3 +446,43 @@
 - 回归：注册、登录、计时、保存、统计均正常。
 
 
+
+## P29 主题交互、失焦暂停与数据分析
+
+**需求**
+
+1. 主题弹窗删除 ♥ 点赞数、移除亮/暗分段；导航与登录页加圆形月亮/太阳按钮切换亮暗并持久化。
+2. 失焦自动暂停：切标签/最小化立即暂停并保留时长，返回不自动继续，toast 提示；仅 running 触发。
+3. 近 7 天分钟柱状图、当天项目占比横条、连续打卡与近 8 周 56 格热力图；前端聚合、不改表、不加依赖。
+4. sessions 接口 limit 上限提升；拆 2–3 个提交并同步双远端与 Word。
+
+**实现**
+
+1. `theme.js`：卡片只保留色块与名称；新增 `ICONS.moon/sun` 与 `syncModeButtons()`，按当前模式写入图标、`aria-label`、`title`；`#modeBtn`、`#modeBtnAuth` 点击切换并持久化。
+2. `styles.css`：删除 `.mode-switch`、`.palette-likes`；新增 `.icon-fab/.icon-btn`、`.analytics`、`.week-chart/.bar-*`、`.share-*`、`.heatmap/.heat-cell.h0..h4` 等；1020px 以下图表改单列。
+3. `app.js`：
+   - `visibilitychange` 中 `document.hidden && timer.running` 时 `stopTimer(true)` 并置 `pausedAway`，返回时 toast「已自动暂停（离开页面）」。
+   - 主题属性冲突修复：`[data-mode]` → `#modeTabs [data-mode]`，`[data-min]` → `#presets [data-min]`。
+   - `loadSessions` 改 `limit=1000` 并拆出 `renderSessionList()`；新增 `weekSeries / todayShare / streakOf / heatmapOf` 纯函数与四个渲染函数，导出 `window.FocusAnalytics` 供测试。
+4. `app/main.py`、`deploy/static/cloud-api.js`、`deploy/static/local-api.js`：sessions limit 上限 100 → 1000。
+
+**验证（Edge / playwright-core channel=msedge）**
+
+- 主题：likes=0、亮暗分段=0、卡片=25；亮色 aria-label「切换到暗色」、暗色「切换到亮色」，刷新保持 dark。
+- 暂停：模拟 hidden 后按钮=「继续」、savedRunning=false、读数 24:58 不变、toast「已自动暂停（离开页面）」、errors=0。
+- 图表：7 根柱、today 1 根、tip「11/22 · 30 分钟」；占比 25 分钟 83% / 5 分钟 17%；streak=1「今天已打卡」；热力图 56 格、末格 h2、历史不足留空。
+- 纯函数：streak 今天有记录=3、无记录=2 且 todayHas=false；heat 档位 [4,3,2,1]、创建前 blank=true；errors=0。
+
+**问题**
+
+- `html[data-mode]` 被原 `[data-mode]` 选择器误命中，点击会改写计时模式并重置计时；已限定作用域。
+- Playwright 多标签页无法产生真实 hidden，改用 `Object.defineProperty` + `visibilitychange` 验证代码路径。
+- favicon 404 → data URI SVG；旧 CSS 缓存 → `?v=` 版本号。
+
+**提交**
+
+- `784de7a` P29 主题弹窗精简与月亮切换按钮
+- `8a2893b` P29 失焦自动暂停并修复主题属性冲突
+- `d1c0ddc` P29 近7天与打卡数据分析
+
+GitHub Actions Pages 对 `d1c0ddc` 部署 success；线上已含 `weekChart`、`heatmap`、`modeBtn`。
