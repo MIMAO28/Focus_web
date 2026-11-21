@@ -164,4 +164,39 @@
 
 - 本人在 PythonAnywhere 注册并按 README 部署；我负责 WSGI 路径、环境变量与公网验证。
 
+---
+
+## P11 · 2026-11-21 · GitHub Pages 在线版
+
+**阶段**：公网发布
+
+**参考**：本人旧项目 <https://github.com/MIMAO28/listening-desk>（静态 Vite 站点部署在 GitHub Pages；`account-config.json` 暴露 Supabase 项目地址与 publishable key；README 说明材料/听写存本浏览器，登录统计同步 Supabase）。
+
+**方案**
+
+1. 静态版复用 `app/static` 的前端（HTML/CSS/JS），不另写界面。
+2. 新增 `deploy/static/local-api.js`：用 localStorage 实现与服务端同形状的接口（注册、登录、项目、专注记录、统计），`app.js` 通过 `window.FocusLocalApi` 自动切换。
+3. `deploy/build_pages.py` 由 `app/static` 生成 `site/`；GitHub Actions 构建并发布到 Pages。
+4. 账号密码用 PBKDF2-SHA256（15 万次、随机盐）存浏览器；数据键 `focus.local.v1`。
+
+**问题与修复**
+
+- Q-P11-01：首次 Actions 在 `configure-pages` 失败（Pages 未启用，仓库无管理员权限自动开启）。处理：本人在浏览器登录 GitHub 后，把 Pages 的 Source 改为 GitHub Actions；重新推送后部署成功。
+
+**验证**
+
+- 公网地址：<https://mimao28.github.io/Focus_web/>（路径区分大小写）。
+- 浏览器实测：注册 → 新建“英语听力” → 倒计时 → 保存 9 秒 → 刷新后仍登录，统计与记录保留，PASS。
+- 工作流：Deploy GitHub Pages 运行 `completed / success`。
+
+**提交**
+
+- 402641c P11 增加 GitHub Pages 静态版与自动部署
+- b1c4602 P11 补充 GitHub Pages 在线版说明
+
+**限制**
+
+- 账号与数据存当前浏览器，不清缓存/不换设备才保留；跨设备需接 Supabase（旧项目已有账号与项目）。
+- 页面窄屏（≤900px）会隐藏顶栏邮箱，属既有响应式样式。
+
 
