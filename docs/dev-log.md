@@ -523,3 +523,31 @@ GitHub Actions Pages 对 `d1c0ddc` 部署 success；线上已含 `weekChart`、`
 - `f68a47f` P30 空状态与 GitHub 风格热力图
 
 GitHub Actions Pages 对 `f68a47f` 部署 success，线上已含 3 个视图与新版热力图。
+
+## P31 项目页合并与全屏专注
+
+**需求**
+
+1. 项目页放回主页面下方，不再单独开一页。
+2. 增加全屏模式：只显示主题色搭配的时间。
+
+**实现**
+
+1. `index.html` 删除 `view-projects`，把项目面板与三步说明移入 `view-timer`，放在引言之后；导航仅保留计时/统计。
+2. `app.js`：`VIEWS = ["timer","stats"]`，`#projects` 映射到计时视图；`showView` 在 `#projects` 时 `scrollIntoView`，其余回到页顶。
+3. 计时卡新增 `#fullBtn`，全屏覆盖层 `#focusFull` 只包含 `#fullDigits` 与退出按钮；背景 `--hero-bg`、文字 `--hero-fg`，字号 `clamp(64px, 20vw, 320px)`。
+4. `enterFull/exitFull` 调用 Fullscreen API，捕获拒绝异常；`fullscreenchange` 与 Esc 同步关闭；`renderTimer` 同步写入计时卡与全屏读数；退出登录自动收起。
+5. 全屏时 `body.is-full { overflow: hidden; }`，避免出现右侧滚动条。
+
+**验证（Edge）**
+
+- 导航 2 项、无 `view-projects`、项目区位于计时视图；切统计时项目区隐藏；`#projects` 定位 top=108。
+- 全屏原生生效，读数 24:57→24:56 同步；浅色底 rgb(245,200,75)、字 316.8px；按钮/Esc/原生退出均正常。
+- 390 宽无溢出（scrollWidth=390），时间 78px、宽 193px；暗色底 rgb(65,54,22)；body overflow 进出正确；错误 0。
+
+**提交**
+
+- `1ae089e` P31 项目页并入主页面
+- `7dc32ca` P31 全屏专注模式
+
+GitHub Actions Pages 对 `7dc32ca` 部署 success，线上已无 view-projects并包含全屏按钮与覆盖层。
