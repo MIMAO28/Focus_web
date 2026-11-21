@@ -447,7 +447,7 @@ function restoreTimer() {
   timer.startAt = Number(saved.startAt) || 0;
   timer.autoSaved = !!saved.autoSaved;
 
-  document.querySelectorAll("[data-mode]").forEach((b) => {
+  document.querySelectorAll("#modeTabs [data-mode]").forEach((b) => {
     b.classList.toggle("active", b.dataset.mode === timer.mode);
   });
   $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
@@ -582,7 +582,7 @@ $("saveBtn").addEventListener("click", () => {
   saveFocus(secs, false);
 });
 
-document.querySelectorAll("[data-mode]").forEach((btn) => {
+document.querySelectorAll("#modeTabs [data-mode]").forEach((btn) => {
   btn.addEventListener("click", () => {
     if (timer.running) {
       toast("先暂停再切换模式");
@@ -590,12 +590,12 @@ document.querySelectorAll("[data-mode]").forEach((btn) => {
     }
     const carried = Math.floor(elapsed());
     timer.mode = btn.dataset.mode;
-    document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
+    document.querySelectorAll("#modeTabs [data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
     $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
     timer.base = carried;
     timer.target = carried + 25 * 60;
     timer.autoSaved = false;
-    document.querySelectorAll("[data-min]").forEach((b) => b.classList.toggle("active", b.dataset.min === "25"));
+    document.querySelectorAll("#presets [data-min]").forEach((b) => b.classList.toggle("active", b.dataset.min === "25"));
     clearInterval(timer.tick);
     timer.tick = null;
     persistTimer();
@@ -603,7 +603,7 @@ document.querySelectorAll("[data-mode]").forEach((btn) => {
   });
 });
 
-document.querySelectorAll("[data-min]").forEach((btn) => {
+document.querySelectorAll("#presets [data-min]").forEach((btn) => {
   btn.addEventListener("click", () => {
     if (timer.running) {
       toast("先暂停再改时长");
@@ -623,8 +623,20 @@ document.querySelectorAll("[data-min]").forEach((btn) => {
 });
 
 $("projectSelect").addEventListener("change", persistTimer);
+let pausedAway = false;
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) persistTimer();
+  if (document.hidden) {
+    if (timer.running) {
+      stopTimer(true);
+      pausedAway = true;
+    }
+    persistTimer();
+    return;
+  }
+  if (pausedAway) {
+    pausedAway = false;
+    toast("已自动暂停（离开页面）");
+  }
 });
 window.addEventListener("beforeunload", persistTimer);
 
