@@ -67,7 +67,7 @@ function beep() {
   }
 }
 
-async function api(path, options = {}) {
+async function fetchApi(path, options = {}) {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
@@ -85,6 +85,10 @@ async function api(path, options = {}) {
   }
   return data;
 }
+
+/* 静态版（GitHub Pages）会先加载 local-api.js，此时改走浏览器本地存储。 */
+const api = (path, options) =>
+  typeof window.FocusLocalApi === "function" ? window.FocusLocalApi(path, options) : fetchApi(path, options);
 
 /* ---------------- 登录 ---------------- */
 function setAuthMode(mode) {

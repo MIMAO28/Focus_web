@@ -7,6 +7,9 @@
 data/
 .screenshots/
 
+# GitHub Pages 构建产物
+site/
+
 # 密钥与环境变量
 .env
 .env.*
