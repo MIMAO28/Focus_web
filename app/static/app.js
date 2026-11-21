@@ -153,10 +153,11 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "projects", "stats"];
+const VIEWS = ["timer", "stats"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
+  if (name === "projects") return "timer";
   return VIEWS.includes(name) ? name : "timer";
 }
 
