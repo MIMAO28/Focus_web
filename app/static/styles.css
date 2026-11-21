@@ -301,6 +301,10 @@ button, input, select { font-family: inherit; color: inherit; }
   border-radius: 999px;
 }
 .nav a:hover { background: var(--yellow); }
+.nav a.active {
+  background: var(--ink);
+  color: var(--cream);
+}
 
 .user { display: flex; align-items: center; gap: 10px; }
 .user-email {
@@ -311,6 +315,9 @@ button, input, select { font-family: inherit; color: inherit; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- 视图切换 ---------- */
+.view[hidden] { display: none; }
 
 /* ---------- 主视觉 ---------- */
 .hero-wrap { padding: 6px 20px 0; }

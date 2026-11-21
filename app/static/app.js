@@ -152,6 +152,31 @@ function showAuth() {
   setAuthMode("login");
 }
 
+/* ---------------- 视图切换 ---------------- */
+const VIEWS = ["timer", "projects", "stats"];
+
+function currentView() {
+  const name = (location.hash || "").replace("#", "");
+  return VIEWS.includes(name) ? name : "timer";
+}
+
+function showView(name, options = {}) {
+  const view = VIEWS.includes(name) ? name : "timer";
+  VIEWS.forEach((key) => {
+    $("view-" + key).hidden = key !== view;
+  });
+  document.querySelectorAll(".nav a").forEach((a) => {
+    const active = a.getAttribute("href") === "#" + view;
+    a.classList.toggle("active", active);
+    if (active) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  if (view === "stats") renderAnalytics();
+  if (options.scroll !== false) window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", () => showView(currentView()));
+
 function enterApp(me) {
   user = { email: me.email, created_at: me.created_at, createdAt: me.created_at };
   stats = me.stats || stats;
@@ -166,6 +191,7 @@ function enterApp(me) {
   loadSessions();
   restoreTimer();
   renderTimer();
+  showView(currentView(), { scroll: false });
 }
 
 $("logoutBtn").addEventListener("click", async () => {

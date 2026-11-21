@@ -58,8 +58,8 @@
   <header class="topbar">
     <div class="nav-shell">
       <a class="logo" href="#timer">FOCUS<span>!</span></a>
-      <nav class="nav">
-        <a href="#timer">计时</a>
+      <nav class="nav" aria-label="页面切换">
+        <a href="#timer" class="active" aria-current="page">计时</a>
         <a href="#projects">项目</a>
         <a href="#stats">统计</a>
       </nav>
@@ -72,13 +72,14 @@
     </div>
   </header>
 
+  <div id="view-timer" class="view">
   <section class="hero-wrap">
     <div class="hero-frame">
       <section class="hero" id="timer">
         <div class="hero-copy">
           <span class="eyebrow">DEEP WORK · 学习专注</span>
           <h1 class="hero-title">FOCUS<em>deeper.</em></h1>
-          <p class="hero-sub">选一个项目，按下开始。倒计时专注、正计时自由，每一秒都记进你的账号。</p>
+          <p class="hero-sub">选定项目，按下开始。倒计时或正计时，专注过的每一分钟都会留在这里。</p>
           <div class="hero-actions">
             <a class="btn-primary" href="#projects">先建一个项目</a>
             <span class="kbd-chip">空格 开始 / 暂停</span>
@@ -125,12 +126,14 @@
       </div>
     </div>
   </section>
+  </div>
 
+  <div id="view-projects" class="view" hidden>
   <section id="projects" class="panel">
     <div class="section-head">
       <div>
         <span class="eyebrow">YOUR TRACKS</span>
-        <h2>学习项目<em>分开算。</em></h2>
+        <h2>学习项目</h2>
       </div>
       <div class="new-project">
         <input id="projectName" maxlength="40" placeholder="新项目，例如：雅思听力">
@@ -148,7 +151,9 @@
       <div class="step"><span class="step-no">03</span><h3>自动入账</h3><p>结束即保存，今天、本周、累计都能看到。</p></div>
     </div>
   </section>
+  </div>
 
+  <div id="view-stats" class="view" hidden>
   <section id="stats" class="panel">
     <div class="section-head">
       <div>
@@ -187,6 +192,7 @@
       <ul id="sessionList" class="session-list"></ul>
     </div>
   </section>
+  </div>
 
   <footer class="foot">
     <div class="foot-big">KEEP<br>SHOWING UP.</div>
