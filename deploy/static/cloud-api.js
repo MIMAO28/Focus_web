@@ -24,6 +24,9 @@
     if (/User already registered/i.test(text)) return "该邮箱已注册，请直接登录";
     if (/Password should be at least/i.test(text)) return "密码至少 6 位";
     if (/rate limit/i.test(text)) return "邮件发送太频繁，请稍后再试";
+    if (/Error sending confirmation email/i.test(text)) {
+      return "验证邮件发送失败：请检查邮箱 SMTP 配置（用户名应为完整邮箱、密码为授权码）";
+    }
     if (/relation .* does not exist/i.test(text) || /Could not find the table/i.test(text)) {
       return "云端数据表还没创建，请先在 Supabase 运行建表脚本";
     }
