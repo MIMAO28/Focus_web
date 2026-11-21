@@ -14,7 +14,17 @@
 - P01–P05：仓库、过程记录与规则建立（P05 撤销过一次选题）
 - P06：基础版功能已实现并通过接口与浏览器实测
 - P09：代码已同步到 GitHub；补充公网部署入口与说明
-- 后续：公网部署（PythonAnywhere / Oracle）、计时刷新续接、番茄循环、图表
+- P11：新增 GitHub Pages 静态版，账号与数据保存在浏览器，自动部署
+- 后续：计时刷新续接、番茄循环、图表、可选 Supabase 跨设备同步
+
+## 在线版（GitHub Pages）
+
+- 地址：<https://mimao28.github.io/Focus_web/>
+- 构建：`python deploy/build_pages.py` 由 `app/static` 生成 `site/`（CI 自动执行）
+- 机制：静态页 + 浏览器本地后端 `deploy/static/local-api.js`；账号、项目、专注记录存在 `localStorage`（键 `focus.local.v1`）
+- 限制：换设备或清空浏览器数据后账号与记录不保留；与旧项目 listening-desk 的材料保存方式一致，后续可接 Supabase 做跨设备同步
+- 服务端版仍在 `app/`（FastAPI + SQLite），用于本机或云主机部署
+- 部署工作流：`.github/workflows/pages.yml`（push 到 `master` 自动发布）
 
 ## 功能（基础版）
 
