@@ -54,7 +54,6 @@
         <a href="#timer">计时</a>
         <a href="#projects">项目</a>
         <a href="#stats">统计</a>
-        <a href="#account">账号</a>
       </nav>
       <div class="user">
         <span id="userEmail" class="user-email"></span>
@@ -98,15 +97,16 @@
             <button id="resetBtn" class="ghost" type="button">重置</button>
             <button id="saveBtn" class="btn-dark" type="button">结束并保存</button>
           </div>
-          <p class="mini">空格 开始/暂停 · R 重置 · 倒计时归零自动保存</p>
+          <p class="mini">空格 开始/暂停 · R 重置 · 切换模式会累加已计时长</p>
         </div>
       </section>
     </div>
   </section>
 
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track">STAY FOCUSED · 专注每一分钟 · DEEP WORK · 项目分开统计 · 今天也要开始 · KEEP GOING · 专注每一分钟 · DEEP WORK · 别让今天白过 · KEEP SHOWING UP · </div>
-  </div>
+  <section class="quote">
+    <p class="quote-text">“你不需要更多时间，<em>你只需要更少分心。</em>”</p>
+    <span class="quote-by">FOCUS! DAILY NOTE</span>
+  </section>
 
   <section id="projects" class="panel">
     <div class="section-head">
@@ -150,35 +150,24 @@
     </div>
   </section>
 
-  <section id="account" class="panel">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow">YOUR ACCOUNT</span>
-        <h2>账号与数据</h2>
-      </div>
-    </div>
-    <div class="account-card">
-      <p class="panel-note" id="storageNote"></p>
-      <div class="account-grid" id="localTools" hidden>
-        <div class="tool-card" id="backupCard">
-          <h3>备份与恢复</h3>
-          <p class="mini">导出会把当前浏览器里的账号与专注记录打包成 JSON；换设备后导入即可继续用。</p>
-          <div class="tool-actions">
-            <button id="exportBtn" class="ghost small" type="button">导出备份</button>
-            <label class="file-btn">导入备份<input id="importFile" type="file" accept="application/json,text/plain" hidden></label>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <footer class="foot">
     <div class="foot-big">KEEP<br>SHOWING UP.</div>
     <div class="foot-row">
-      <span class="foot-note">FOCUS! · 本地运行 · 数据只留在这台电脑</span>
+      <span class="foot-note">FOCUS! · 保持专注</span>
       <span class="foot-mark">FOCUS<span>!</span></span>
     </div>
   </footer>
+</div>
+
+<div id="renameModal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="renameTitle">
+    <h3 id="renameTitle">重命名项目</h3>
+    <input id="renameInput" maxlength="40" placeholder="项目名称">
+    <div class="modal-actions">
+      <button id="renameCancel" class="ghost small" type="button">取消</button>
+      <button id="renameSave" class="btn-primary small" type="button">保存</button>
+    </div>
+  </div>
 </div>
 
 <script src="/static/app.js"></script>

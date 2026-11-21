@@ -35,14 +35,14 @@ def main():
             '<script src="./cloud-api.js"></script>\n'
             '<script src="./app.js"></script>'
         )
-        footer = "FOCUS! · 在线版 · 账号与记录同步到云端"
+        footer = "FOCUS! · 保持专注"
     else:
         shutil.copy(LOCAL_API, os.path.join(OUT, "local-api.js"))
         scripts = '<script src="./local-api.js"></script>\n<script src="./app.js"></script>'
-        footer = "FOCUS! · 在线版 · 账号与数据保存在当前浏览器"
+        footer = "FOCUS! · 保持专注"
 
     html = html.replace('<script src="./app.js"></script>', scripts)
-    html = html.replace("FOCUS! · 本地运行 · 数据只留在这台电脑", footer)
+    html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
     shutil.copy(os.path.join(SRC, "styles.css"), os.path.join(OUT, "styles.css"))

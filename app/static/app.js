@@ -163,7 +163,6 @@ function enterApp(me) {
   renderProjects();
   renderStats();
   loadSessions();
-  setupAccountPanel();
   restoreTimer();
   renderTimer();
 }
@@ -180,26 +179,7 @@ $("logoutBtn").addEventListener("click", async () => {
   toast("已退出登录");
 });
 
-/* ---------------- 账号与数据 ---------------- */
-const isLocalMode = () => typeof window.FocusLocalApi === "function";
-const isCloudMode = () => typeof window.FocusCloudApi === "function";
-
-function setupAccountPanel() {
-  const cloud = isCloudMode();
-  const local = isLocalMode();
-  $("localTools").hidden = !local;
-  if (cloud) {
-    $("storageNote").textContent =
-      "账号由 Supabase 管理，学习项目与专注记录同步到云端。换设备或换浏览器登录同一邮箱即可继续；离线时无法登录。";
-  } else if (local) {
-    $("storageNote").textContent =
-      "账号、项目与专注记录保存在当前浏览器（localStorage）。换设备或清缓存前，请先“导出备份”，在新设备“导入备份”。";
-  } else {
-    $("storageNote").textContent =
-      "账号与专注记录保存在本机服务端 data/focus.db。停止本机服务后网站不可访问，数据仍保留在磁盘。";
-  }
-}
-
+/* ---------------- 重新发送验证邮件 ---------------- */
 $("resendBtn").addEventListener("click", async () => {
   const email = $("email").value.trim();
   if (!email) {
@@ -212,39 +192,6 @@ $("resendBtn").addEventListener("click", async () => {
   } catch (err) {
     toast(err.message);
   }
-});
-
-$("exportBtn").addEventListener("click", () => {
-  if (!isLocalMode()) return;
-  const text = window.FocusLocalApi.exportData();
-  if (!text) {
-    toast("还没有可导出的数据");
-    return;
-  }
-  const blob = new Blob([text], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `focus-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-  toast("备份已导出");
-});
-
-$("importFile").addEventListener("change", (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (!file || !isLocalMode()) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const result = window.FocusLocalApi.importData(String(reader.result));
-      toast(`已导入 ${result.users} 个账号，正在刷新`);
-      setTimeout(() => location.reload(), 800);
-    } catch (err) {
-      toast(err.message);
-    }
-  };
-  reader.readAsText(file, "utf-8");
-  e.target.value = "";
 });
 
 /* ---------------- 项目 ---------------- */
@@ -299,7 +246,7 @@ function renderProjects(preferredId) {
     const rename = document.createElement("button");
     rename.type = "button";
     rename.textContent = "改名";
-    rename.addEventListener("click", () => renameProject(p));
+    rename.addEventListener("click", () => openRename(p));
     const del = document.createElement("button");
     del.type = "button";
     del.textContent = "删除";
@@ -337,21 +284,53 @@ async function addProject() {
   }
 }
 
-async function renameProject(project) {
-  const name = window.prompt("新的项目名称", project.name);
-  if (!name || !name.trim() || name.trim() === project.name) return;
+let renameTarget = null;
+
+function openRename(project) {
+  renameTarget = project;
+  $("renameInput").value = project.name;
+  $("renameModal").hidden = false;
+  setTimeout(() => {
+    $("renameInput").focus();
+    $("renameInput").select();
+  }, 0);
+}
+
+function closeRename() {
+  renameTarget = null;
+  $("renameModal").hidden = true;
+}
+
+async function commitRename() {
+  if (!renameTarget) return;
+  const name = $("renameInput").value.trim();
+  if (!name || name === renameTarget.name) {
+    closeRename();
+    return;
+  }
   try {
-    const data = await api(`/api/projects/${project.id}`, {
+    const data = await api(`/api/projects/${renameTarget.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ name: name.trim() }),
+      body: JSON.stringify({ name }),
     });
     projects = data.projects;
     renderProjects();
+    closeRename();
     toast("已改名");
   } catch (err) {
     toast(err.message);
   }
 }
+
+$("renameCancel").addEventListener("click", closeRename);
+$("renameSave").addEventListener("click", commitRename);
+$("renameInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") commitRename();
+  if (e.key === "Escape") closeRename();
+});
+$("renameModal").addEventListener("click", (e) => {
+  if (e.target.id === "renameModal") closeRename();
+});
 
 async function deleteProject(project) {
   if (!window.confirm(`删除“${project.name}”？该项目的专注记录也会一起删除。`)) return;
@@ -608,11 +587,17 @@ document.querySelectorAll("[data-mode]").forEach((btn) => {
       toast("先暂停再切换模式");
       return;
     }
+    const carried = Math.floor(elapsed());
     timer.mode = btn.dataset.mode;
     document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
     $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
-    timer.target = 25 * 60;
-    resetTimer();
+    timer.base = carried;
+    timer.target = carried + 25 * 60;
+    timer.autoSaved = false;
+    document.querySelectorAll("[data-min]").forEach((b) => b.classList.toggle("active", b.dataset.min === "25"));
+    clearInterval(timer.tick);
+    timer.tick = null;
+    persistTimer();
     renderTimer();
   });
 });
@@ -623,10 +608,15 @@ document.querySelectorAll("[data-min]").forEach((btn) => {
       toast("先暂停再改时长");
       return;
     }
+    const carried = Math.floor(elapsed());
     const minutes = Number(btn.dataset.min);
-    timer.target = minutes * 60;
+    timer.base = carried;
+    timer.target = carried + minutes * 60;
+    timer.autoSaved = false;
+    clearInterval(timer.tick);
+    timer.tick = null;
     document.querySelectorAll("[data-min]").forEach((b) => b.classList.toggle("active", b === btn));
-    resetTimer();
+    persistTimer();
     renderTimer();
   });
 });
