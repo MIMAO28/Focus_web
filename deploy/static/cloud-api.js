@@ -202,6 +202,7 @@
     const { projects, sessions } = await fetchAll();
     return {
       email: user.email,
+      username: (user.user_metadata && user.user_metadata.username) || "",
       created_at: toEpoch(user.created_at) || Math.floor(Date.now() / 1000),
       stats: userStats(sessions),
       projects: projectStats(projects, sessions),
@@ -216,13 +217,15 @@
     if (path === "/api/register" && method === "POST") {
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
+      const username = String(body.username || "").trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) fail("邮箱格式不正确");
       if (password.length < 6) fail("密码至少 6 位");
+      if (username && (username.length < 2 || username.length > 20)) fail("用户名请填 2-20 个字符");
       const redirect = encodeURIComponent(location.origin + location.pathname);
       // 即使 Supabase 返回了会话，也不直接登录：必须先点邮件里的验证链接。
       await raw(`/auth/v1/signup?redirect_to=${redirect}`, {
         method: "POST",
-        body: { email, password },
+        body: { email, password, data: username ? { username } : {} },
       });
       saveSession(null);
       fail(`验证邮件已发送到 ${email}，请点邮件里的链接完成注册，然后回来登录`, 409, "EMAIL_CONFIRM");

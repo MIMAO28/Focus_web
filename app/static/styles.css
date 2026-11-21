@@ -461,8 +461,31 @@ button, input, select { font-family: inherit; color: inherit; }
 }
 .preset.active { background: var(--yellow); color: var(--card1-fg); }
 
-.select-label { margin-bottom: 16px; }
+.select-label { margin-top: 6px; margin-bottom: 16px; }
 .select-label select { cursor: pointer; }
+
+.custom-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.custom-timer input {
+  width: 76px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+.custom-timer button { padding: 5px 12px; }
 
 .timer-actions { display: grid; grid-template-columns: 1.25fr .75fr 1.25fr; gap: 8px; }
 .timer-actions button { padding: 12px 6px; font-size: 13px; }
@@ -662,6 +685,70 @@ body.is-full { overflow: hidden; }
   cursor: pointer;
 }
 .project-actions button:hover { background: var(--ink); color: var(--cream); }
+
+/* ---------- 待办清单 ---------- */
+.todo-panel { padding-top: 8px; padding-bottom: 0; }
+.todo-add input { width: min(360px, 100%); }
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 12px 16px;
+  color: var(--red);
+  font-weight: 700;
+  font-size: 14px;
+}
+.todo-item.done {
+  color: var(--muted);
+  font-weight: 500;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--paper) 68%, var(--cream));
+}
+.todo-check { display: inline-flex; align-items: center; cursor: pointer; flex: 0 0 auto; }
+.todo-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.todo-box {
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.todo-check input:checked + .todo-box { background: var(--muted); border-color: var(--muted); }
+.todo-check input:checked + .todo-box::after {
+  content: "✓";
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+.todo-check input:focus-visible + .todo-box { outline: 3px solid var(--ring); outline-offset: 2px; }
+.todo-text { flex: 1; word-break: break-word; }
+.todo-item.done .todo-text { text-decoration: line-through; }
+.todo-del {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.todo-del:hover { color: var(--red); }
+.todo-empty { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
 
 /* ---------- 三步 ---------- */
 .steps {

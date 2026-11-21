@@ -30,6 +30,7 @@ db.init_db()
 class Credentials(BaseModel):
     email: str
     password: str
+    username: str = ""
 
 
 class ProjectIn(BaseModel):
@@ -50,7 +51,7 @@ def current_user(request: Request):
     with closing(db.connect()) as conn:
         row = conn.execute(
             """
-            SELECT u.id, u.email, u.created_at, s.expires_at
+            SELECT u.id, u.email, u.username, u.created_at, s.expires_at
             FROM auth_sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = ?
             """,
@@ -62,13 +63,19 @@ def current_user(request: Request):
             conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
             conn.commit()
             raise HTTPException(status_code=401, detail="登录已过期，请重新登录")
-        return {"id": row["id"], "email": row["email"], "created_at": row["created_at"]}
+        return {
+            "id": row["id"],
+            "email": row["email"],
+            "username": row["username"] or "",
+            "created_at": row["created_at"],
+        }
 
 
 def me_payload(conn, user):
     stats = db.user_stats(conn, user["id"])
     return {
         "email": user["email"],
+        "username": user.get("username", ""),
         "created_at": user["created_at"],
         "stats": stats,
         "projects": db.project_stats(conn, user["id"]),
@@ -102,10 +109,13 @@ def index():
 def register(body: Credentials, response: Response):
     email = (body.email or "").strip().lower()
     password = body.password or ""
+    username = (body.username or "").strip()
     if not auth.valid_email(email):
         raise HTTPException(status_code=400, detail="邮箱格式不正确")
     if len(password) < 6:
         raise HTTPException(status_code=400, detail="密码至少 6 位")
+    if username and (len(username) < 2 or len(username) > 20):
+        raise HTTPException(status_code=400, detail="用户名请填 2-20 个字符")
     with closing(db.connect()) as conn:
         exists = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
         if exists:
@@ -113,8 +123,8 @@ def register(body: Credentials, response: Response):
         salt, digest = auth.hash_password(password)
         now = int(time.time())
         cur = conn.execute(
-            "INSERT INTO users(email, password_hash, salt, created_at) VALUES (?, ?, ?, ?)",
-            (email, digest, salt, now),
+            "INSERT INTO users(email, username, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)",
+            (email, username, digest, salt, now),
         )
         user_id = cur.lastrowid
         conn.execute(
@@ -123,7 +133,7 @@ def register(body: Credentials, response: Response):
         )
         conn.commit()
         begin_session(conn, user_id, response)
-        user = {"id": user_id, "email": email, "created_at": now}
+        user = {"id": user_id, "email": email, "username": username, "created_at": now}
         return me_payload(conn, user)
 
 
@@ -133,13 +143,18 @@ def login(body: Credentials, response: Response):
     password = body.password or ""
     with closing(db.connect()) as conn:
         row = conn.execute(
-            "SELECT id, email, password_hash, salt, created_at FROM users WHERE email = ?",
+            "SELECT id, email, username, password_hash, salt, created_at FROM users WHERE email = ?",
             (email,),
         ).fetchone()
         if not row or not auth.verify_password(password, row["salt"], row["password_hash"]):
             raise HTTPException(status_code=401, detail="邮箱或密码不正确")
         begin_session(conn, row["id"], response)
-        user = {"id": row["id"], "email": row["email"], "created_at": row["created_at"]}
+        user = {
+            "id": row["id"],
+            "email": row["email"],
+            "username": row["username"] or "",
+            "created_at": row["created_at"],
+        }
         return me_payload(conn, user)
 
 

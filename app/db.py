@@ -13,6 +13,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
+    username TEXT,
     password_hash TEXT NOT NULL,
     salt TEXT NOT NULL,
     created_at INTEGER NOT NULL
@@ -63,6 +64,9 @@ def connect():
 def init_db():
     with closing(connect()) as conn:
         conn.executescript(SCHEMA)
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+        if "username" not in columns:
+            conn.execute("ALTER TABLE users ADD COLUMN username TEXT")
         conn.commit()
 
 

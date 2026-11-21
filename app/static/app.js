@@ -6,6 +6,7 @@ let user = null;
 let projects = [];
 let stats = { total: 0, today: 0, week: 0, count: 0 };
 let sessions = [];
+let todos = [];
 
 const timer = {
   mode: "countdown",
@@ -101,11 +102,12 @@ function setAuthMode(mode) {
     btn.classList.toggle("active", btn.dataset.authTab === mode);
   });
   $("authSubmit").textContent = mode === "login" ? "登录" : "注册并登录";
+  $("usernameField").hidden = mode !== "register";
   $("authHint").classList.remove("error");
   $("authHint").textContent =
     mode === "login"
       ? "还没有账号？切到“注册”，用邮箱创建，数据按账号分开保存。"
-      : "注册后自动登录；密码至少 6 位，只保存在这台电脑。";
+      : "注册时设置用户名，会显示在右上角；密码至少 6 位。";
   $("password").autocomplete = mode === "login" ? "current-password" : "new-password";
 }
 
@@ -121,12 +123,18 @@ $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("email").value.trim();
   const password = $("password").value;
+  const username = $("username").value.trim();
   const hint = $("authHint");
   hint.classList.remove("error");
+  if (authMode === "register" && (username.length < 2 || username.length > 20)) {
+    hint.textContent = "用户名请填 2-20 个字符";
+    hint.classList.add("error");
+    return;
+  }
   try {
     const data = await api(authMode === "login" ? "/api/login" : "/api/register", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, username }),
     });
     hint.textContent = "";
     enterApp(data);
@@ -226,16 +234,24 @@ document.addEventListener("keydown", (e) => {
 });
 
 function enterApp(me) {
-  user = { email: me.email, created_at: me.created_at, createdAt: me.created_at };
+  user = {
+    email: me.email,
+    username: me.username || "",
+    created_at: me.created_at,
+    createdAt: me.created_at,
+  };
   stats = me.stats || stats;
   projects = me.projects || [];
   $("authView").hidden = true;
   $("appView").hidden = false;
-  $("userEmail").textContent = me.email;
+  $("userEmail").textContent = me.username || (me.email || "").split("@")[0];
+  $("userEmail").title = me.email;
   $("resendBtn").hidden = true;
   pickQuote();
   renderProjects();
   renderStats();
+  loadTodos();
+  renderTodos();
   loadSessions();
   restoreTimer();
   renderTimer();
@@ -584,6 +600,98 @@ document.addEventListener("keydown", (e) => {
 $("addProject").addEventListener("click", addProject);
 $("projectName").addEventListener("keydown", (e) => {
   if (e.key === "Enter") addProject();
+});
+
+/* ---------------- 待办清单 ---------------- */
+function todoKey() {
+  return user ? `focus.todos.v1:${user.email}` : null;
+}
+
+function loadTodos() {
+  const key = todoKey();
+  todos = [];
+  if (!key) return;
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || "[]");
+    if (Array.isArray(data)) {
+      todos = data
+        .filter((t) => t && typeof t.text === "string" && t.text.trim())
+        .map((t) => ({ text: t.text, done: !!t.done }));
+    }
+  } catch (e) {
+    todos = [];
+  }
+}
+
+function saveTodos() {
+  const key = todoKey();
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(todos));
+  } catch (e) {
+    /* 存储失败不影响当前操作 */
+  }
+}
+
+function renderTodos() {
+  const list = $("todoList");
+  list.textContent = "";
+  $("todoEmpty").hidden = todos.length > 0;
+  todos.forEach((todo, index) => {
+    const li = document.createElement("li");
+    li.className = "todo-item" + (todo.done ? " done" : "");
+
+    const label = document.createElement("label");
+    label.className = "todo-check";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = todo.done;
+    input.setAttribute("aria-label", todo.done ? "标记为未完成" : "标记为已完成");
+    input.addEventListener("change", () => {
+      todos[index].done = input.checked;
+      saveTodos();
+      renderTodos();
+    });
+    const box = document.createElement("span");
+    box.className = "todo-box";
+    label.append(input, box);
+
+    const text = document.createElement("span");
+    text.className = "todo-text";
+    text.textContent = todo.text;
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "todo-del";
+    del.textContent = "×";
+    del.setAttribute("aria-label", "删除待办");
+    del.addEventListener("click", () => {
+      todos.splice(index, 1);
+      saveTodos();
+      renderTodos();
+    });
+
+    li.append(label, text, del);
+    list.appendChild(li);
+  });
+}
+
+function addTodo() {
+  const input = $("todoInput");
+  const text = input.value.trim();
+  if (!text) {
+    toast("先写点内容");
+    return;
+  }
+  todos.push({ text, done: false });
+  input.value = "";
+  saveTodos();
+  renderTodos();
+}
+
+$("todoAdd").addEventListener("click", addTodo);
+$("todoInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addTodo();
 });
 
 /* ---------------- 统计 ---------------- */
@@ -948,6 +1056,7 @@ function restoreTimer() {
     b.classList.toggle("active", b.dataset.mode === timer.mode);
   });
   $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
+  $("customTimer").style.display = timer.mode === "countdown" ? "flex" : "none";
   if (saved.projectId && projects.some((p) => String(p.id) === String(saved.projectId))) {
     timer.projectId = String(saved.projectId);
     if (activeProjects().some((p) => String(p.id) === timer.projectId)) $("projectSelect").value = timer.projectId;
@@ -1109,6 +1218,7 @@ document.querySelectorAll("#modeTabs [data-mode]").forEach((btn) => {
     timer.mode = btn.dataset.mode;
     document.querySelectorAll("#modeTabs [data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
     $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
+    $("customTimer").style.display = timer.mode === "countdown" ? "flex" : "none";
     timer.base = carried;
     timer.target = carried + 25 * 60;
     timer.autoSaved = false;
@@ -1133,10 +1243,39 @@ document.querySelectorAll("#presets [data-min]").forEach((btn) => {
     timer.autoSaved = false;
     clearInterval(timer.tick);
     timer.tick = null;
-    document.querySelectorAll("[data-min]").forEach((b) => b.classList.toggle("active", b === btn));
+    document.querySelectorAll("#presets [data-min]").forEach((b) => b.classList.toggle("active", b === btn));
     persistTimer();
     renderTimer();
   });
+});
+
+function applyCustomMinutes() {
+  if (timer.running) {
+    toast("先暂停再改时长");
+    return;
+  }
+  const minutes = Number($("customMin").value);
+  if (!Number.isFinite(minutes) || minutes < 1 || minutes > 600) {
+    toast("请输入 1-600 分钟");
+    return;
+  }
+  const carried = Math.floor(elapsed());
+  timer.base = carried;
+  timer.target = carried + Math.round(minutes) * 60;
+  timer.autoSaved = false;
+  clearInterval(timer.tick);
+  timer.tick = null;
+  document.querySelectorAll("#presets [data-min]").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.min) === Math.round(minutes));
+  });
+  persistTimer();
+  renderTimer();
+  toast(`已设为 ${Math.round(minutes)} 分钟`);
+}
+
+$("customApply").addEventListener("click", applyCustomMinutes);
+$("customMin").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") applyCustomMinutes();
 });
 
 $("projectSelect").addEventListener("change", async () => {

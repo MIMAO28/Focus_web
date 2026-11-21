@@ -43,6 +43,9 @@
       <label>邮箱
         <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
       </label>
+      <label id="usernameField" hidden>用户名
+        <input id="username" type="text" maxlength="20" autocomplete="nickname" placeholder="2-20 个字符，显示在右上角">
+      </label>
       <label>密码
         <input id="password" type="password" required minlength="6" autocomplete="current-password" placeholder="至少 6 位">
       </label>
@@ -99,6 +102,12 @@
             <button class="preset" data-min="45" type="button">45 分</button>
             <button class="preset" data-min="60" type="button">60 分</button>
           </div>
+          <div class="custom-timer" id="customTimer">
+            <span>自定义</span>
+            <input id="customMin" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="25" aria-label="自定义倒计时分钟数">
+            <span>分钟</span>
+            <button id="customApply" class="ghost small" type="button">设置</button>
+          </div>
           <label class="select-label">当前项目
             <select id="projectSelect"></select>
           </label>
@@ -125,6 +134,21 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <section id="todos" class="panel todo-panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">TODAY'S LIST</span>
+        <h2>待办清单</h2>
+      </div>
+      <div class="new-project todo-add">
+        <input id="todoInput" maxlength="60" placeholder="添加一件待办，例如：精听一篇 TED">
+        <button id="todoAdd" class="btn-primary small" type="button">添加</button>
+      </div>
+    </div>
+    <ul id="todoList" class="todo-list"></ul>
+    <p id="todoEmpty" class="todo-empty">还没有待办，先写下今天要做的一件事。</p>
   </section>
 
   <section id="projects" class="panel">

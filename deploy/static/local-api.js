@@ -127,6 +127,7 @@
   function me(user) {
     return {
       email: user.email,
+      username: user.username || "",
       created_at: user.created_at,
       stats: statsOf(user),
       projects: projectsOf(user),
@@ -143,13 +144,16 @@
     if (path === "/api/register" && method === "POST") {
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
+      const username = String(body.username || "").trim();
       if (!EMAIL_RE.test(email)) fail("邮箱格式不正确");
       if (password.length < 6) fail("密码至少 6 位");
+      if (username && (username.length < 2 || username.length > 20)) fail("用户名请填 2-20 个字符");
       if (state.users[email]) fail("该邮箱已注册，请直接登录", 409);
       const salt = randomSalt();
       const hash = await hashPassword(password, salt);
       state.users[email] = {
         email,
+        username,
         salt,
         hash,
         created_at: nowSec(),
