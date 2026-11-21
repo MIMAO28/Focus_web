@@ -134,9 +134,10 @@ $("authForm").addEventListener("submit", async (e) => {
     if (err.code === "EMAIL_CONFIRM") {
       setAuthMode("login");
       $("email").value = email;
+      $("resendBtn").hidden = false;
       hint.classList.remove("error");
       hint.textContent = err.message;
-      toast("请先查收确认邮件");
+      toast("验证邮件已发送，请先完成邮箱验证");
       return;
     }
     hint.textContent = err.message;
@@ -158,6 +159,7 @@ function enterApp(me) {
   $("authView").hidden = true;
   $("appView").hidden = false;
   $("userEmail").textContent = me.email;
+  $("resendBtn").hidden = true;
   renderProjects();
   renderStats();
   loadSessions();
@@ -185,8 +187,7 @@ const isCloudMode = () => typeof window.FocusCloudApi === "function";
 function setupAccountPanel() {
   const cloud = isCloudMode();
   const local = isLocalMode();
-  $("localTools").hidden = !(cloud || local);
-  $("backupCard").hidden = !local;
+  $("localTools").hidden = !local;
   if (cloud) {
     $("storageNote").textContent =
       "账号由 Supabase 管理，学习项目与专注记录同步到云端。换设备或换浏览器登录同一邮箱即可继续；离线时无法登录。";
@@ -199,19 +200,15 @@ function setupAccountPanel() {
   }
 }
 
-$("passwordForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+$("resendBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if (!email) {
+    toast("先填写注册邮箱");
+    return;
+  }
   try {
-    await api("/api/password", {
-      method: "POST",
-      body: JSON.stringify({
-        old_password: $("oldPassword").value,
-        new_password: $("newPassword").value,
-      }),
-    });
-    $("oldPassword").value = "";
-    $("newPassword").value = "";
-    toast("密码已修改，下次登录用新密码");
+    await api("/api/resend", { method: "POST", body: JSON.stringify({ email }) });
+    toast("验证邮件已重新发送，请查收");
   } catch (err) {
     toast(err.message);
   }
@@ -656,6 +653,13 @@ document.addEventListener("keydown", (e) => {
 (async function boot() {
   setAuthMode("login");
   renderTimer();
+  if (window.FocusCloudReady) {
+    try {
+      await window.FocusCloudReady;
+    } catch (e) {
+      /* 邮箱确认回跳失败时仍可手动登录 */
+    }
+  }
   try {
     const me = await api("/api/me");
     enterApp(me);

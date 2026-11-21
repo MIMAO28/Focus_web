@@ -181,19 +181,6 @@
       return { ok: true };
     }
 
-    if (path === "/api/password" && method === "POST") {
-      need();
-      const oldPwd = String(body.old_password || "");
-      const newPwd = String(body.new_password || "");
-      if (newPwd.length < 6) fail("新密码至少 6 位");
-      const oldHash = await hashPassword(oldPwd, user.salt);
-      if (oldHash !== user.hash) fail("当前密码不正确", 403);
-      user.salt = randomSalt();
-      user.hash = await hashPassword(newPwd, user.salt);
-      save(state);
-      return { ok: true };
-    }
-
     if (path === "/api/me" && method === "GET") {
       need();
       return me(user);

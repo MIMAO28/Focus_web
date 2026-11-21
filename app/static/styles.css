@@ -399,6 +399,18 @@ button, input, select { font-family: inherit; }
 }
 .file-btn:hover { border-color: var(--cream); }
 
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 10px;
+}
+.link-btn:hover { color: var(--cream); }
+
 .check {
   display: flex !important;
   align-items: center;

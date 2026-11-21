@@ -215,12 +215,25 @@
       const password = String(body.password || "");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) fail("邮箱格式不正确");
       if (password.length < 6) fail("密码至少 6 位");
-      const data = await raw("/auth/v1/signup", { method: "POST", body: { email, password } });
-      if (!data || !data.access_token) {
-        fail("确认邮件已发送，请查收邮件完成验证后回来登录", 409, "EMAIL_CONFIRM");
-      }
-      await storeSession(data);
-      return payload();
+      const redirect = encodeURIComponent(location.origin + location.pathname);
+      // 即使 Supabase 返回了会话，也不直接登录：必须先点邮件里的验证链接。
+      await raw(`/auth/v1/signup?redirect_to=${redirect}`, {
+        method: "POST",
+        body: { email, password },
+      });
+      saveSession(null);
+      fail(`验证邮件已发送到 ${email}，请点邮件里的链接完成注册，然后回来登录`, 409, "EMAIL_CONFIRM");
+    }
+
+    if (path === "/api/resend" && method === "POST") {
+      const email = String(body.email || "").trim().toLowerCase();
+      if (!email) fail("请先填写注册邮箱");
+      const redirect = encodeURIComponent(location.origin + location.pathname);
+      await raw(`/auth/v1/resend?redirect_to=${redirect}`, {
+        method: "POST",
+        body: { type: "signup", email },
+      });
+      return { ok: true };
     }
 
     if (path === "/api/login" && method === "POST") {
@@ -242,24 +255,6 @@
         }
       }
       saveSession(null);
-      return { ok: true };
-    }
-
-    if (path === "/api/password" && method === "POST") {
-      const user = currentUser();
-      if (!user) fail("请先登录", 401);
-      const oldPwd = String(body.old_password || "");
-      const newPwd = String(body.new_password || "");
-      if (newPwd.length < 6) fail("新密码至少 6 位");
-      const verified = await raw("/auth/v1/token?grant_type=password", {
-        method: "POST",
-        body: { email: user.email, password: oldPwd },
-      });
-      await raw("/auth/v1/user", {
-        method: "PUT",
-        token: verified.access_token,
-        body: { password: newPwd },
-      });
       return { ok: true };
     }
 
@@ -353,4 +348,21 @@
   };
 
   window.FocusCloudApi.isCloud = true;
+
+  /* 邮箱验证链接回跳时，URL hash 会带 access_token / refresh_token：
+     读取后写入会话，随后 app.js 会自动进入应用。 */
+  window.FocusCloudReady = (async () => {
+    if (!location.hash || location.hash.indexOf("access_token") === -1) return;
+    const params = new URLSearchParams(location.hash.slice(1));
+    const access = params.get("access_token");
+    const refresh = params.get("refresh_token");
+    if (!access || !refresh) return;
+    try {
+      const me = await raw("/auth/v1/user", { token: access });
+      saveSession({ access_token: access, refresh_token: refresh, user: me });
+      history.replaceState(null, "", location.pathname + location.search);
+    } catch (e) {
+      /* 链接失效时保持登录页，让用户手动登录 */
+    }
+  })();
 })();

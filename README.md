@@ -17,12 +17,14 @@
 - P11：新增 GitHub Pages 静态版，账号与数据保存在浏览器，自动部署
 - 后续：计时刷新续接、番茄循环、图表、可选 Supabase 跨设备同步
 
-## 在线版（GitHub Pages）
+## 在线版（GitHub Pages + Supabase）
 
 - 地址：<https://mimao28.github.io/Focus_web/>
 - 构建：`python deploy/build_pages.py` 由 `app/static` 生成 `site/`（CI 自动执行）
-- 机制：静态页 + 浏览器本地后端 `deploy/static/local-api.js`；账号、项目、专注记录存在 `localStorage`（键 `focus.local.v1`）
-- 限制：换设备或清空浏览器数据后账号与记录不保留；与旧项目 listening-desk 的材料保存方式一致，后续可接 Supabase 做跨设备同步
+- 账号：Supabase Auth 邮箱注册；**必须点邮件里的验证链接后才能登录**，注册不会直接进入网站
+- 数据：学习项目与专注记录存 Supabase（`focus_projects`、`focus_sessions`），换设备/换浏览器登录同一邮箱即可同步
+- 建表脚本：`deploy/supabase/schema.sql`（含行级权限，只能读写自己的数据）
+- 配置：`deploy/cloud-config.json` 存在时生成云端版；不存在时退回浏览器 localStorage 版（`local-api.js`）
 - 服务端版仍在 `app/`（FastAPI + SQLite），用于本机或云主机部署
 - 部署工作流：`.github/workflows/pages.yml`（push 到 `master` 自动发布）
 

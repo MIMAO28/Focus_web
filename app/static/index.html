@@ -32,6 +32,7 @@
       <label class="check"><input id="showPwd" type="checkbox"> 显示密码</label>
       <button class="btn-primary wide" id="authSubmit" type="submit">登录</button>
       <p class="hint" id="authHint">还没有账号？切到“注册”，用邮箱创建，数据按账号分开保存。</p>
+      <button id="resendBtn" class="link-btn" type="button" hidden>没收到验证邮件？重新发送</button>
     </form>
   </div>
 </main>
@@ -117,16 +118,6 @@
     <h2>账号与数据</h2>
     <p class="panel-note" id="storageNote"></p>
     <div class="account-grid" id="localTools" hidden>
-      <form id="passwordForm" class="tool-card">
-        <h3>修改密码</h3>
-        <label>当前密码
-          <input id="oldPassword" type="password" autocomplete="current-password">
-        </label>
-        <label>新密码
-          <input id="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="至少 6 位">
-        </label>
-        <button class="btn-primary small" type="submit">保存新密码</button>
-      </form>
       <div class="tool-card" id="backupCard">
         <h3>备份与恢复</h3>
         <p class="mini">导出会把当前浏览器里的账号与专注记录打包成 JSON；换设备后导入即可继续用。</p>
