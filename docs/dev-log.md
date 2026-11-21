@@ -336,4 +336,29 @@
 
 - Supabase → Authentication → URL Configuration：Site URL 设为 `https://mimao28.github.io/Focus_web/`；Redirect URLs 添加 `https://mimao28.github.io/Focus_web/**`。
 
+## P23 重设计为 Growth Haus 风格
+
+**目标**：按用户提供的 Framer 模板（growth-haus-wbs.framer.website）重做界面，保留全部既有功能。
+
+**参考提炼**
+
+- 字体：Changa One（大标题）、Instrument Serif Italic（装饰斜体）、Inter（正文）。
+- 配色：奶油 #F3E9E0、墨 #1A160A、黄 #F5C84B、红 #E8442E、粉 #F5B8C8、绿 #2F8F4E、橙 #FFAE46。
+- 版式：黄底红框 Hero、超大标题 + 贴纸、红色跑马灯、彩色卡片、硬阴影、胶囊按钮、深色页脚大字。
+
+**改动**
+
+1. 重写 `app/static/index.html` 的结构与类名，保留全部 ID 与 `data-*` 钩子（登录、计时、项目、统计、备份）。
+2. 重写 `app/static/styles.css`：新配色、字体、贴纸、跑马灯、彩色卡片、响应式；移动端导航改为第二行横排。
+
+**验证**
+
+- 本地预览：注册 → 建项目“英语听力” → 计时 43 秒 → 暂停 → 保存；统计与记录更新；刷新后计时器复位。
+- 控制台无报错；390px 视口 `scrollWidth = clientWidth`，无横向溢出；移动端导航已恢复为第二行。
+- 线上部署：提交 ee58603，Actions `completed / success`；线上 `index.html` 含 `hero-frame` 与 Changa One 字体，`styles.css` 含新配色。
+
+**后续**
+
+- 云端真实邮箱注册回归（待 SMTP 修复后由本人完成）。
+
 
