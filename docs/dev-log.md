@@ -306,4 +306,34 @@
 
 - `focus_sessions` 的 RLS 只校验 `user_id`，未校验 `project_id` 归属；建议后续在 with check 中加入项目归属校验。
 
+---
+
+## P15 · 2026-11-21 · 注册改为邮箱验证并移除修改密码
+
+**阶段**：流程修正
+
+**用户反馈**
+
+- 注册不能点完就进站，必须像旧项目一样先发验证邮件、点链接确认后才能登录。
+- 删除“修改密码”入口。
+
+**改动**
+
+1. 云端注册：调用 Supabase `/auth/v1/signup?redirect_to=...`；**无论返回是否带会话，都清空会话并提示“验证邮件已发送”**，不再自动登录。
+2. 登录未验证账号时，Supabase 返回 “Email not confirmed”，映射为“邮箱还没验证，请先点确认邮件里的链接”。
+3. 新增“没收到验证邮件？重新发送”（`/auth/v1/resend`）。
+4. 邮箱验证链接回跳：解析 URL hash 中的 `access_token/refresh_token`，写入会话并自动进入应用。
+5. 删除账号区“修改密码”整块及云端/本地/FastAPI 三处密码修改接口。
+6. README 更新为 Supabase 云端说明。
+
+**验证**
+
+- 构建与部署：提交 e9558cd，Actions `completed / success`；线上页面含 `resendBtn`，不含 `oldPassword`。
+- 代码层：注册分支强制 `saveSession(null)` 后抛出 `EMAIL_CONFIRM`；未验证登录由 Supabase 拦截。
+- 未执行：真实注册（需向邮箱发信，避免占用项目邮件额度）；待本人用自身邮箱验证。
+
+**待本人配置**
+
+- Supabase → Authentication → URL Configuration：Site URL 设为 `https://mimao28.github.io/Focus_web/`；Redirect URLs 添加 `https://mimao28.github.io/Focus_web/**`。
+
 
