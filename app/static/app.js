@@ -274,21 +274,34 @@ function selectedProjectId() {
   return $("projectSelect").value || null;
 }
 
+const ARCHIVE_PREFIX = "已归档 · ";
+const isArchived = (p) => p.name.startsWith(ARCHIVE_PREFIX);
+const activeProjects = () => projects.filter((p) => !isArchived(p));
+
+function projectAction(label, onClick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = label;
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
 function renderProjects(preferredId) {
   const grid = $("projectGrid");
   grid.textContent = "";
   const select = $("projectSelect");
   const keep = preferredId != null ? String(preferredId) : select.value;
   select.textContent = "";
+  const actives = activeProjects();
 
-  if (!projects.length) {
+  if (!actives.length) {
     const empty = document.createElement("p");
     empty.className = "empty";
-    empty.textContent = "还没有项目，先添加一个。";
+    empty.textContent = "还没有进行中的项目，先添加一个。";
     grid.appendChild(empty);
   }
 
-  projects.forEach((p) => {
+  actives.forEach((p) => {
     const option = document.createElement("option");
     option.value = String(p.id);
     option.textContent = p.name;
@@ -318,23 +331,40 @@ function renderProjects(preferredId) {
 
     const actions = document.createElement("div");
     actions.className = "project-actions";
-    const rename = document.createElement("button");
-    rename.type = "button";
-    rename.textContent = "改名";
-    rename.addEventListener("click", () => openRename(p));
-    const del = document.createElement("button");
-    del.type = "button";
-    del.textContent = "删除";
-    del.addEventListener("click", () => deleteProject(p));
-    actions.append(rename, del);
+    actions.append(
+      projectAction("详情", () => openDetail(p)),
+      projectAction("改名", () => openRename(p)),
+      projectAction("归档", () => archiveProject(p))
+    );
 
     card.append(title, total, meta, actions);
     grid.appendChild(card);
   });
 
-  if (keep && projects.some((p) => String(p.id) === keep)) {
-    select.value = keep;
-  }
+  const archived = projects.filter(isArchived);
+  const list = $("archivedList");
+  list.textContent = "";
+  $("archivedBox").hidden = !archived.length;
+  archived.forEach((p) => {
+    const card = document.createElement("article");
+    card.className = "archived-card";
+    const name = document.createElement("strong");
+    name.textContent = p.name;
+    const meta = document.createElement("span");
+    meta.textContent = `总时长 ${fmtDuration(p.total)} · ${p.count} 次`;
+    const actions = document.createElement("div");
+    actions.className = "archived-actions";
+    actions.append(
+      projectAction("详情", () => openDetail(p)),
+      projectAction("恢复", () => restoreProject(p))
+    );
+    card.append(name, meta, actions);
+    list.appendChild(card);
+  });
+
+  const ids = actives.map((p) => String(p.id));
+  if (keep && ids.includes(keep)) select.value = keep;
+  else if (ids.length) select.value = ids[0];
 }
 
 async function addProject() {
@@ -391,6 +421,7 @@ async function commitRename() {
     projects = data.projects;
     renderProjects();
     closeRename();
+    loadSessions();
     toast("已改名");
   } catch (err) {
     toast(err.message);
@@ -407,11 +438,62 @@ $("renameModal").addEventListener("click", (e) => {
   if (e.target.id === "renameModal") closeRename();
 });
 
-async function deleteProject(project) {
-  if (!window.confirm(`删除“${project.name}”？该项目的专注记录也会一起删除。`)) return;
+async function archiveProject(project) {
+  if (isArchived(project)) return;
+  if (activeProjects().length <= 1) {
+    toast("至少保留一个进行中的项目");
+    return;
+  }
+  if (!project.count) {
+    if (window.confirm(`“${project.name}”还没有记录，直接删除？`)) deleteProject(project, true);
+    return;
+  }
+  const ok = window.confirm(
+    `归档“${project.name}”？\n${project.count} 次记录（共 ${fmtDuration(project.total)}）会保留在统计里，项目从列表隐藏。`
+  );
+  if (!ok) return;
+  try {
+    const data = await api(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: (ARCHIVE_PREFIX + project.name).slice(0, 40) }),
+    });
+    projects = data.projects;
+    closeDetail();
+    renderProjects();
+    loadSessions();
+    toast("已归档，记录已保留");
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function restoreProject(project) {
+  if (!isArchived(project)) return;
+  const name = project.name.slice(ARCHIVE_PREFIX.length).trim() || "未命名项目";
+  try {
+    const data = await api(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+    projects = data.projects;
+    closeDetail();
+    renderProjects();
+    loadSessions();
+    toast("已恢复项目");
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteProject(project, skipConfirm = false) {
+  if (!skipConfirm) {
+    const extra = project.count ? `该项目的 ${project.count} 次记录会一并清除，且无法恢复。` : "";
+    if (!window.confirm(`彻底删除“${project.name}”？${extra}`)) return;
+  }
   try {
     const data = await api(`/api/projects/${project.id}`, { method: "DELETE" });
     projects = data.projects;
+    closeDetail();
     renderProjects();
     renderStats();
     loadSessions();
@@ -420,6 +502,73 @@ async function deleteProject(project) {
     toast(err.message);
   }
 }
+
+/* ---------------- 项目详情 ---------------- */
+let detailTarget = null;
+
+function startOfLocalWeek(ms) {
+  const d = startOfLocalDay(ms);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+function openDetail(project) {
+  detailTarget = project;
+  $("detailModal").hidden = false;
+  renderDetail();
+}
+
+function closeDetail() {
+  detailTarget = null;
+  $("detailModal").hidden = true;
+}
+
+function renderDetail() {
+  const p = detailTarget;
+  if (!p) return;
+  const archived = isArchived(p);
+  const own = sessions.filter((s) => s.project === p.name);
+  const weekStart = Math.floor(startOfLocalWeek(Date.now()).getTime() / 1000);
+  const weekSec = own.filter((s) => s.ended_at >= weekStart).reduce((sum, s) => sum + s.seconds, 0);
+
+  $("detailTitle").textContent = p.name;
+  $("detailState").textContent = archived
+    ? "已归档 · 记录仍保留在统计中，可随时恢复"
+    : `共 ${p.count} 次专注`;
+  $("detailTotal").textContent = fmtDuration(p.total);
+  $("detailToday").textContent = fmtDuration(p.today);
+  $("detailWeek").textContent = fmtDuration(weekSec);
+  $("detailCount").textContent = String(p.count);
+  $("detailShare").textContent = stats.total ? `${Math.round((p.total / stats.total) * 100)}%` : "0%";
+  renderWeekChart($("detailWeekChart"), weekSeries(own, Date.now()), { compact: true });
+
+  const list = $("detailList");
+  list.textContent = "";
+  if (!own.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "还没有专注记录。";
+    list.appendChild(li);
+  } else {
+    own.slice(0, 10).forEach((s) => list.appendChild(sessionItem(s, true)));
+  }
+
+  $("detailArchive").hidden = archived;
+  $("detailRestore").hidden = !archived;
+  $("detailArchive").disabled = !archived && activeProjects().length <= 1;
+  $("detailArchive").title = $("detailArchive").disabled ? "至少保留一个进行中的项目" : "";
+}
+
+$("detailClose").addEventListener("click", closeDetail);
+$("detailModal").addEventListener("click", (e) => {
+  if (e.target.id === "detailModal") closeDetail();
+});
+$("detailArchive").addEventListener("click", () => detailTarget && archiveProject(detailTarget));
+$("detailRestore").addEventListener("click", () => detailTarget && restoreProject(detailTarget));
+$("detailDelete").addEventListener("click", () => detailTarget && deleteProject(detailTarget));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("detailModal").hidden) closeDetail();
+});
 
 $("addProject").addEventListener("click", addProject);
 $("projectName").addEventListener("keydown", (e) => {
@@ -443,6 +592,22 @@ async function loadSessions() {
   }
   renderSessionList();
   renderAnalytics();
+  if (detailTarget) renderDetail();
+}
+
+function sessionItem(s, withoutProject = false) {
+  const li = document.createElement("li");
+  const left = document.createElement("span");
+  left.textContent = withoutProject ? fmtDuration(s.seconds) : `${s.project} · ${fmtDuration(s.seconds)}`;
+  const right = document.createElement("span");
+  right.className = "muted";
+  const d = new Date(s.ended_at * 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  right.textContent = `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} · ${
+    s.mode === "countdown" ? "倒计时" : "正计时"
+  }`;
+  li.append(left, right);
+  return li;
 }
 
 function renderSessionList() {
@@ -455,20 +620,7 @@ function renderSessionList() {
     list.appendChild(li);
     return;
   }
-  sessions.slice(0, 20).forEach((s) => {
-    const li = document.createElement("li");
-    const left = document.createElement("span");
-    left.textContent = `${s.project} · ${fmtDuration(s.seconds)}`;
-    const right = document.createElement("span");
-    right.className = "muted";
-    const d = new Date(s.ended_at * 1000);
-    const pad = (n) => String(n).padStart(2, "0");
-    right.textContent = `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} · ${
-      s.mode === "countdown" ? "倒计时" : "正计时"
-    }`;
-    li.append(left, right);
-    list.appendChild(li);
-  });
+  sessions.slice(0, 20).forEach((s) => list.appendChild(sessionItem(s)));
 }
 
 /* ---------------- 分析图表 ---------------- */
@@ -617,13 +769,19 @@ function emptyState(ghost, text) {
   return wrap;
 }
 
-function renderWeekChart(rows) {
-  const box = $("weekChart");
+function renderWeekChart(box, rows, options = {}) {
   box.textContent = "";
   const max = Math.max(...rows.map((r) => r.minutes), 0);
-  box.classList.toggle("is-empty", !max);
+  box.classList.toggle("is-empty", !max && !options.compact);
   if (!max) {
-    box.appendChild(emptyState(ghostWeek(), "最近 7 天还没有记录"));
+    if (options.compact) {
+      const p = document.createElement("p");
+      p.className = "detail-empty";
+      p.textContent = "最近 7 天还没有记录。";
+      box.appendChild(p);
+    } else {
+      box.appendChild(emptyState(ghostWeek(), "最近 7 天还没有记录"));
+    }
     return;
   }
   rows.forEach((r) => {
@@ -713,7 +871,7 @@ function renderStreak(streak, cells) {
 
 function renderAnalytics() {
   const now = Date.now();
-  renderWeekChart(weekSeries(sessions, now));
+  renderWeekChart($("weekChart"), weekSeries(sessions, now));
   renderTodayShare(todayShare(sessions, now));
   renderStreak(streakOf(sessions, now), heatmapOf(sessions, now, user && user.createdAt));
 }

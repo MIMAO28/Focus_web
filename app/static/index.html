@@ -139,6 +139,10 @@
       </div>
     </div>
     <div id="projectGrid" class="grid"></div>
+    <div id="archivedBox" class="archived" hidden>
+      <h3>已归档项目</h3>
+      <div id="archivedList" class="archived-list"></div>
+    </div>
   </section>
 
   <section class="steps">
@@ -228,6 +232,32 @@
     <div class="modal-actions">
       <button id="renameCancel" class="ghost small" type="button">取消</button>
       <button id="renameSave" class="btn-primary small" type="button">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="detailModal" class="modal" hidden>
+  <div class="modal-card detail-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="detail-head">
+      <h3 id="detailTitle">项目详情</h3>
+      <button id="detailClose" class="ghost small" type="button">关闭</button>
+    </div>
+    <p id="detailState" class="detail-state"></p>
+    <div class="detail-total"><strong id="detailTotal">0 分</strong><span>总时长</span></div>
+    <div class="detail-grid">
+      <div><span>今天</span><strong id="detailToday">0 分</strong></div>
+      <div><span>本周</span><strong id="detailWeek">0 分</strong></div>
+      <div><span>次数</span><strong id="detailCount">0</strong></div>
+      <div><span>占比</span><strong id="detailShare">0%</strong></div>
+    </div>
+    <h4>近 7 天</h4>
+    <div id="detailWeekChart" class="week-chart small"></div>
+    <h4>最近记录</h4>
+    <ul id="detailList" class="session-list"></ul>
+    <div class="detail-actions">
+      <button id="detailArchive" class="ghost small" type="button">归档</button>
+      <button id="detailRestore" class="ghost small" type="button" hidden>恢复项目</button>
+      <button id="detailDelete" class="danger-link" type="button">删除并清除记录</button>
     </div>
   </div>
 </div>
