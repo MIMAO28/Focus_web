@@ -275,4 +275,35 @@
 - 本人在 Supabase SQL Editor 执行 `deploy/supabase/schema.sql`。
 - 之后添加 `deploy/cloud-config.json`，重新构建发布，验证跨浏览器/跨设备同步。
 
+---
+
+## P14 · 2026-11-21 · 启用 Supabase 云端同步
+
+**阶段**：公网架构切换
+
+**前提确认**
+
+- 本人在 Supabase SQL Editor 执行建表脚本；REST 查询 `focus_projects`、`focus_sessions` 均返回 200（空数组），表已存在。
+
+**改动**
+
+- 新增 `deploy/cloud-config.json`（项目 URL 与 publishable key，公开可见）。
+- 构建脚本检测到配置后生成云端版：`site/` 含 `cloud-config.js`、`cloud-api.js`，页脚文案改为“账号与记录同步到云端”。
+- 推送 `c8a1e10`，GitHub Actions 部署 `completed / success`。
+
+**验证**
+
+- 线上 `https://mimao28.github.io/Focus_web/` 返回 200，HTML 已引用 `cloud-config.js`。
+- 浏览器实测：错误账号登录提示“邮箱或密码不正确”，网络请求命中
+  `https://thvnchihsoirgwqxfgyn.supabase.co/auth/v1/token?grant_type=password`，返回 400，说明云端鉴权已接管。
+
+**未验证 / 原因**
+
+- 完整注册与跨设备同步：项目开启邮箱确认（`mailer_autoconfirm=false`），没有已确认测试账号，无法自行注册验证。
+- 待本人用邮箱注册并点确认邮件，或在控制台临时关闭 Confirm email 后由我完成双端验证。
+
+**已知待加固**
+
+- `focus_sessions` 的 RLS 只校验 `user_id`，未校验 `project_id` 归属；建议后续在 with check 中加入项目归属校验。
+
 
