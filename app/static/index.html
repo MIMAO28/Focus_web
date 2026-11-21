@@ -22,7 +22,10 @@
       <span class="badge">STUDY CLUB</span>
       <span class="badge badge-dark">EST. 2026</span>
     </div>
-    <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
+    <div class="auth-tools">
+      <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
+      <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
+    </div>
     <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
     <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
     <div class="sticker sticker-a">25:00</div>
@@ -62,6 +65,7 @@
       <div class="user">
         <span id="userEmail" class="user-email"></span>
         <button id="themeBtn" class="ghost small" type="button">◐ 主题</button>
+        <button id="modeBtn" class="ghost small icon-btn" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
         <button id="logoutBtn" class="ghost small" type="button">退出</button>
       </div>
     </div>
@@ -188,10 +192,6 @@
     <div class="theme-head">
       <h3 id="themeTitle">主题配色</h3>
       <button id="themeClose" class="ghost small" type="button">关闭</button>
-    </div>
-    <div class="mode-switch" id="modeSwitch">
-      <button type="button" data-mode-pick="light">亮色</button>
-      <button type="button" data-mode-pick="dark">暗色</button>
     </div>
     <div id="paletteGrid" class="palette-grid"></div>
   </div>

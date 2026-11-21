@@ -31,6 +31,10 @@
   const KEY = "focus.theme.v1";
   const root = document.documentElement;
   let state = { id: "classic", mode: "light" };
+  const ICONS = {
+    moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  };
 
   /* ---------- 颜色工具 ---------- */
   const hex2rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -218,10 +222,7 @@
       const name = document.createElement("span");
       name.className = "palette-name";
       name.textContent = p.name;
-      const likes = document.createElement("span");
-      likes.className = "palette-likes";
-      likes.textContent = p.likes ? `♥ ${p.likes.toLocaleString("en-US")}` : "默认配色";
-      btn.append(sw, name, likes);
+      btn.append(sw, name);
       btn.addEventListener("click", () => {
         apply(p.id, state.mode, true);
         syncActive();
@@ -234,8 +235,18 @@
     document.querySelectorAll("[data-palette]").forEach((el) => {
       el.classList.toggle("active", el.dataset.palette === state.id);
     });
-    document.querySelectorAll("[data-mode-pick]").forEach((el) => {
-      el.classList.toggle("active", el.dataset.modePick === state.mode);
+    syncModeButtons();
+  }
+
+  function syncModeButtons() {
+    const dark = state.mode === "dark";
+    ["modeBtn", "modeBtnAuth"].forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      el.innerHTML = dark ? ICONS.sun : ICONS.moon;
+      const label = dark ? "切换到亮色" : "切换到暗色";
+      el.setAttribute("aria-label", label);
+      el.setAttribute("title", label);
     });
   }
 
@@ -257,6 +268,15 @@
       const el = $(id);
       if (el) el.addEventListener("click", openTheme);
     });
+    ["modeBtn", "modeBtnAuth"].forEach((id) => {
+      const el = $(id);
+      if (el) {
+        el.addEventListener("click", () => {
+          apply(state.id, state.mode === "dark" ? "light" : "dark", true);
+          syncModeButtons();
+        });
+      }
+    });
     const close = $("themeClose");
     if (close) close.addEventListener("click", closeTheme);
     const modal = $("themeModal");
@@ -265,16 +285,11 @@
         if (e.target.id === "themeModal") closeTheme();
       });
     }
-    document.querySelectorAll("[data-mode-pick]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        apply(state.id, btn.dataset.modePick, true);
-        syncActive();
-      });
-    });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeTheme();
     });
     window.addEventListener("focus-theme", syncActive);
+    syncModeButtons();
   }
 
   window.FocusTheme = {
