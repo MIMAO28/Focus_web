@@ -86,9 +86,12 @@ async function fetchApi(path, options = {}) {
   return data;
 }
 
-/* 静态版（GitHub Pages）会先加载 local-api.js，此时改走浏览器本地存储。 */
-const api = (path, options) =>
-  typeof window.FocusLocalApi === "function" ? window.FocusLocalApi(path, options) : fetchApi(path, options);
+/* 优先走 Supabase 云端；否则走浏览器本地存储；再否则走本机 FastAPI。 */
+const api = (path, options) => {
+  if (typeof window.FocusCloudApi === "function") return window.FocusCloudApi(path, options);
+  if (typeof window.FocusLocalApi === "function") return window.FocusLocalApi(path, options);
+  return fetchApi(path, options);
+};
 
 /* ---------------- 登录 ---------------- */
 function setAuthMode(mode) {
@@ -128,6 +131,14 @@ $("authForm").addEventListener("submit", async (e) => {
     enterApp(data);
     toast(authMode === "login" ? "欢迎回来" : "注册成功，已登录");
   } catch (err) {
+    if (err.code === "EMAIL_CONFIRM") {
+      setAuthMode("login");
+      $("email").value = email;
+      hint.classList.remove("error");
+      hint.textContent = err.message;
+      toast("请先查收确认邮件");
+      return;
+    }
     hint.textContent = err.message;
     hint.classList.add("error");
   }
@@ -169,13 +180,23 @@ $("logoutBtn").addEventListener("click", async () => {
 
 /* ---------------- 账号与数据 ---------------- */
 const isLocalMode = () => typeof window.FocusLocalApi === "function";
+const isCloudMode = () => typeof window.FocusCloudApi === "function";
 
 function setupAccountPanel() {
+  const cloud = isCloudMode();
   const local = isLocalMode();
-  $("localTools").hidden = !local;
-  $("storageNote").textContent = local
-    ? "账号、项目与专注记录保存在当前浏览器（localStorage）。换设备或清缓存前，请先“导出备份”，在新设备“导入备份”。"
-    : "账号与专注记录保存在本机服务端 data/focus.db。停止本机服务后网站不可访问，数据仍保留在磁盘。";
+  $("localTools").hidden = !(cloud || local);
+  $("backupCard").hidden = !local;
+  if (cloud) {
+    $("storageNote").textContent =
+      "账号由 Supabase 管理，学习项目与专注记录同步到云端。换设备或换浏览器登录同一邮箱即可继续；离线时无法登录。";
+  } else if (local) {
+    $("storageNote").textContent =
+      "账号、项目与专注记录保存在当前浏览器（localStorage）。换设备或清缓存前，请先“导出备份”，在新设备“导入备份”。";
+  } else {
+    $("storageNote").textContent =
+      "账号与专注记录保存在本机服务端 data/focus.db。停止本机服务后网站不可访问，数据仍保留在磁盘。";
+  }
 }
 
 $("passwordForm").addEventListener("submit", async (e) => {
@@ -231,8 +252,7 @@ $("importFile").addEventListener("change", (e) => {
 
 /* ---------------- 项目 ---------------- */
 function selectedProjectId() {
-  const value = $("projectSelect").value;
-  return value ? Number(value) : null;
+  return $("projectSelect").value || null;
 }
 
 function renderProjects(preferredId) {
@@ -454,7 +474,7 @@ function restoreTimer() {
     b.classList.toggle("active", b.dataset.mode === timer.mode);
   });
   $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
-  if (saved.projectId && projects.some((p) => p.id === Number(saved.projectId))) {
+  if (saved.projectId && projects.some((p) => String(p.id) === String(saved.projectId))) {
     $("projectSelect").value = String(saved.projectId);
   }
 

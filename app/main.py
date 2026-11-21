@@ -42,6 +42,11 @@ class FocusIn(BaseModel):
     seconds: int
 
 
+class PasswordIn(BaseModel):
+    old_password: str
+    new_password: str
+
+
 def current_user(request: Request):
     token = request.cookies.get(COOKIE_NAME)
     if not token:
@@ -151,6 +156,26 @@ def logout(request: Request, response: Response):
             conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
             conn.commit()
     response.delete_cookie(COOKIE_NAME)
+    return {"ok": True}
+
+
+@app.post("/api/password")
+def change_password(body: PasswordIn, request: Request):
+    user = current_user(request)
+    if len(body.new_password or "") < 6:
+        raise HTTPException(status_code=400, detail="新密码至少 6 位")
+    with closing(db.connect()) as conn:
+        row = conn.execute(
+            "SELECT salt, password_hash FROM users WHERE id = ?", (user["id"],)
+        ).fetchone()
+        if not row or not auth.verify_password(body.old_password or "", row["salt"], row["password_hash"]):
+            raise HTTPException(status_code=403, detail="当前密码不正确")
+        salt, digest = auth.hash_password(body.new_password)
+        conn.execute(
+            "UPDATE users SET salt = ?, password_hash = ? WHERE id = ?",
+            (salt, digest, user["id"]),
+        )
+        conn.commit()
     return {"ok": True}
 
 
