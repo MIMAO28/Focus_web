@@ -27,6 +27,7 @@ def main():
     html = html.replace("/static/", "./")
     version = (os.environ.get("GITHUB_SHA") or str(int(time.time())))[:7]
     html = html.replace('href="./styles.css"', 'href="./styles.css?v=%s"' % version)
+    html = html.replace('src="./theme.js"', 'src="./theme.js?v=%s"' % version)
 
     if cloud:
         config = json.load(open(CLOUD_CFG, encoding="utf-8"))
@@ -50,6 +51,7 @@ def main():
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
     shutil.copy(os.path.join(SRC, "styles.css"), os.path.join(OUT, "styles.css"))
+    shutil.copy(os.path.join(SRC, "theme.js"), os.path.join(OUT, "theme.js"))
     shutil.copy(os.path.join(SRC, "app.js"), os.path.join(OUT, "app.js"))
     open(os.path.join(OUT, ".nojekyll"), "w", encoding="utf-8").write("")
 
