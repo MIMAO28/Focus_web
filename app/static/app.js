@@ -153,7 +153,7 @@ function showAuth() {
 }
 
 function enterApp(me) {
-  user = { email: me.email, created_at: me.created_at };
+  user = { email: me.email, created_at: me.created_at, createdAt: me.created_at };
   stats = me.stats || stats;
   projects = me.projects || [];
   $("authView").hidden = true;
@@ -362,11 +362,16 @@ function renderStats() {
 
 async function loadSessions() {
   try {
-    const data = await api("/api/sessions?limit=20");
-    sessions = data.sessions;
+    const data = await api("/api/sessions?limit=1000");
+    sessions = data.sessions || [];
   } catch (err) {
     sessions = [];
   }
+  renderSessionList();
+  renderAnalytics();
+}
+
+function renderSessionList() {
   const list = $("sessionList");
   list.textContent = "";
   if (!sessions.length) {
@@ -376,7 +381,7 @@ async function loadSessions() {
     list.appendChild(li);
     return;
   }
-  sessions.forEach((s) => {
+  sessions.slice(0, 20).forEach((s) => {
     const li = document.createElement("li");
     const left = document.createElement("span");
     left.textContent = `${s.project} · ${fmtDuration(s.seconds)}`;
@@ -391,6 +396,200 @@ async function loadSessions() {
     list.appendChild(li);
   });
 }
+
+/* ---------------- 分析图表 ---------------- */
+function startOfLocalDay(ms) {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function dayKey(date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function weekSeries(items, nowMs) {
+  const base = startOfLocalDay(nowMs);
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(base);
+    d.setDate(base.getDate() - i);
+    days.push({ date: d, seconds: 0 });
+  }
+  const index = new Map(days.map((x) => [dayKey(x.date), x]));
+  items.forEach((s) => {
+    const row = index.get(dayKey(new Date(s.ended_at * 1000)));
+    if (row) row.seconds += s.seconds;
+  });
+  return days.map((x) => ({
+    label: `${x.date.getMonth() + 1}/${x.date.getDate()}`,
+    weekday: "日一二三四五六"[x.date.getDay()],
+    minutes: Math.round(x.seconds / 60),
+    today: dayKey(x.date) === dayKey(base),
+  }));
+}
+
+function todayShare(items, nowMs) {
+  const start = Math.floor(startOfLocalDay(nowMs).getTime() / 1000);
+  const rows = items.filter((s) => s.ended_at >= start);
+  const total = rows.reduce((sum, s) => sum + s.seconds, 0);
+  const map = new Map();
+  rows.forEach((s) => {
+    const name = s.project || "未命名";
+    const cur = map.get(name) || { name, color: s.color || "", seconds: 0 };
+    cur.seconds += s.seconds;
+    map.set(name, cur);
+  });
+  return {
+    total,
+    items: [...map.values()]
+      .sort((a, b) => b.seconds - a.seconds)
+      .map((x) => ({
+        ...x,
+        minutes: Math.round(x.seconds / 60),
+        percent: total ? (x.seconds / total) * 100 : 0,
+      })),
+  };
+}
+
+function streakOf(items, nowMs) {
+  const set = new Set(
+    items.filter((s) => s.seconds > 0).map((s) => dayKey(new Date(s.ended_at * 1000)))
+  );
+  const today = startOfLocalDay(nowMs);
+  const todayHas = set.has(dayKey(today));
+  const cursor = new Date(today);
+  if (!todayHas) cursor.setDate(cursor.getDate() - 1);
+  let days = 0;
+  while (set.has(dayKey(cursor))) {
+    days += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return { days, todayHas };
+}
+
+function heatmapOf(items, nowMs, createdAtSec) {
+  const today = startOfLocalDay(nowMs);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const start = new Date(monday);
+  start.setDate(monday.getDate() - 49);
+  const map = new Map();
+  items.forEach((s) => {
+    const k = dayKey(new Date(s.ended_at * 1000));
+    map.set(k, (map.get(k) || 0) + s.seconds);
+  });
+  const createdDay = createdAtSec ? startOfLocalDay(createdAtSec * 1000) : null;
+  const cells = [];
+  for (let i = 0; i < 56; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const future = d.getTime() > today.getTime();
+    const before = createdDay && d.getTime() < createdDay.getTime();
+    const minutes = Math.round((map.get(dayKey(d)) || 0) / 60);
+    let level = 0;
+    if (minutes >= 120) level = 4;
+    else if (minutes >= 60) level = 3;
+    else if (minutes >= 25) level = 2;
+    else if (minutes > 0) level = 1;
+    cells.push({ date: d, minutes, level, blank: !!future || !!before });
+  }
+  return cells;
+}
+
+function renderWeekChart(rows) {
+  const box = $("weekChart");
+  box.textContent = "";
+  const max = Math.max(...rows.map((r) => r.minutes), 0);
+  if (!max) {
+    const p = document.createElement("p");
+    p.className = "chart-empty";
+    p.textContent = "最近 7 天还没有记录，开始第一段专注吧。";
+    box.appendChild(p);
+    return;
+  }
+  rows.forEach((r) => {
+    const col = document.createElement("div");
+    col.className = "bar-col" + (r.today ? " today" : "");
+    col.tabIndex = 0;
+    col.setAttribute("aria-label", `${r.label} ${r.minutes} 分钟`);
+    const tip = document.createElement("span");
+    tip.className = "bar-tip";
+    tip.textContent = `${r.label} · ${r.minutes} 分钟`;
+    const wrap = document.createElement("div");
+    wrap.className = "bar-wrap";
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    const pct = r.minutes ? Math.max(4, Math.round((r.minutes / max) * 100)) : 0;
+    bar.style.setProperty("--h", `${pct}%`);
+    wrap.appendChild(bar);
+    const label = document.createElement("span");
+    label.className = "bar-label";
+    label.textContent = r.weekday;
+    col.append(tip, wrap, label);
+    box.appendChild(col);
+  });
+}
+
+function renderTodayShare(share) {
+  const box = $("todayShare");
+  box.textContent = "";
+  if (!share.items.length) {
+    const p = document.createElement("p");
+    p.className = "chart-empty";
+    p.textContent = "今天还没有记录，先开始一段专注。";
+    box.appendChild(p);
+    return;
+  }
+  share.items.forEach((it) => {
+    const row = document.createElement("div");
+    row.className = "share-row";
+    const name = document.createElement("span");
+    name.className = "share-name";
+    name.textContent = it.name;
+    const track = document.createElement("div");
+    track.className = "share-track";
+    const fill = document.createElement("div");
+    fill.className = "share-fill";
+    fill.style.width = `${Math.max(2, it.percent)}%`;
+    if (it.color) fill.style.background = it.color;
+    track.appendChild(fill);
+    const val = document.createElement("span");
+    val.className = "share-val";
+    val.textContent = `${it.minutes} 分钟 · ${Math.round(it.percent)}%`;
+    row.append(name, track, val);
+    box.appendChild(row);
+  });
+}
+
+function renderStreak(streak, cells) {
+  $("streakDays").textContent = String(streak.days);
+  $("streakNote").textContent = streak.todayHas
+    ? "今天已打卡"
+    : streak.days
+    ? "今天还没开始"
+    : "今天开始第一段吧";
+  const box = $("heatmap");
+  box.textContent = "";
+  cells.forEach((c) => {
+    const el = document.createElement("i");
+    el.className = `heat-cell h${c.level}${c.blank ? " blank" : ""}`;
+    if (!c.blank) {
+      el.title = `${c.date.getMonth() + 1}/${c.date.getDate()} · ${c.minutes} 分钟`;
+      el.setAttribute("aria-label", el.title);
+    }
+    box.appendChild(el);
+  });
+}
+
+function renderAnalytics() {
+  const now = Date.now();
+  renderWeekChart(weekSeries(sessions, now));
+  renderTodayShare(todayShare(sessions, now));
+  renderStreak(streakOf(sessions, now), heatmapOf(sessions, now, user && user.createdAt));
+}
+
+window.FocusAnalytics = { weekSeries, todayShare, streakOf, heatmapOf };
 
 /* ---------------- 计时 ---------------- */
 function timerKey() {

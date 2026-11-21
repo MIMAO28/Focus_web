@@ -228,7 +228,7 @@ def delete_project(project_id: int, request: Request):
 @app.get("/api/sessions")
 def sessions(request: Request, limit: int = 20):
     user = current_user(request)
-    limit = max(1, min(limit, 100))
+    limit = max(1, min(limit, 1000))
     with closing(db.connect()) as conn:
         return {"sessions": db.recent_sessions(conn, user["id"], limit)}
 

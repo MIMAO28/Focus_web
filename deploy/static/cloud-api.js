@@ -274,7 +274,7 @@
     };
     if (path.startsWith("/api/sessions") && method === "GET") {
       const params = new URLSearchParams(path.split("?")[1] || "");
-      const limit = Math.max(1, Math.min(Number(params.get("limit") || 20), 100));
+      const limit = Math.max(1, Math.min(Number(params.get("limit") || 20), 1000));
       return { sessions: recentSessions(data.projects, data.sessions, limit) };
     }
 

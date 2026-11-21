@@ -162,6 +162,26 @@
       <div class="stat-card c-green"><span class="stat-label">累计</span><strong id="allTotal">0 分</strong></div>
       <div class="stat-card c-orange"><span class="stat-label">次数</span><strong id="countTotal">0</strong></div>
     </div>
+    <div class="analytics">
+      <div class="chart-card">
+        <div class="chart-head"><h3>近 7 天</h3><span class="chart-sub">分钟</span></div>
+        <div id="weekChart" class="week-chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h3>今天各项目</h3><span class="chart-sub">占比</span></div>
+        <div id="todayShare" class="share-list"></div>
+      </div>
+    </div>
+    <div class="chart-card streak-card">
+      <div class="chart-head"><h3>连续打卡</h3><span id="streakNote" class="chart-sub"></span></div>
+      <div class="streak-value"><strong id="streakDays">0</strong><span>天</span></div>
+      <div id="heatmap" class="heatmap"></div>
+      <div class="heat-legend">
+        <span>少</span>
+        <i class="heat-cell h0"></i><i class="heat-cell h1"></i><i class="heat-cell h2"></i><i class="heat-cell h3"></i><i class="heat-cell h4"></i>
+        <span>多</span>
+      </div>
+    </div>
     <div class="ledger">
       <h3>最近记录</h3>
       <ul id="sessionList" class="session-list"></ul>
