@@ -460,11 +460,11 @@ button, input, select { font-family: inherit; color: inherit; }
 }
 .quote-body { flex: 1; min-width: 0; }
 .quote-text {
-  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  font-weight: 700;
-  font-size: clamp(19px, 2.4vw, 30px);
-  line-height: 1.5;
-  letter-spacing: .01em;
+  font-family: "ZCOOL QingKe HuangYou", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-weight: 400;
+  font-size: clamp(21px, 2.6vw, 34px);
+  line-height: 1.4;
+  letter-spacing: .02em;
   color: var(--cream);
   margin: 0;
 }

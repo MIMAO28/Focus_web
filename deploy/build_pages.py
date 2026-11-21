@@ -7,6 +7,7 @@
 import json
 import os
 import shutil
+import time
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(BASE, "app", "static")
@@ -24,6 +25,8 @@ def main():
 
     html = open(os.path.join(SRC, "index.html"), encoding="utf-8").read()
     html = html.replace("/static/", "./")
+    version = (os.environ.get("GITHUB_SHA") or str(int(time.time())))[:7]
+    html = html.replace('href="./styles.css"', 'href="./styles.css?v=%s"' % version)
 
     if cloud:
         config = json.load(open(CLOUD_CFG, encoding="utf-8"))
@@ -42,6 +45,7 @@ def main():
         footer = "FOCUS! · 保持专注"
 
     html = html.replace('<script src="./app.js"></script>', scripts)
+    html = html.replace('src="./app.js"', 'src="./app.js?v=%s"' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
