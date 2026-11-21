@@ -468,6 +468,48 @@ button, input, select { font-family: inherit; color: inherit; }
 .timer-actions button { padding: 12px 6px; font-size: 13px; }
 
 .mini { color: var(--muted); font-size: 11.5px; text-align: center; margin: 12px 0 0; line-height: 1.5; }
+.full-btn { width: 100%; margin-top: 8px; }
+body.is-full { overflow: hidden; }
+
+/* ---------- 全屏专注 ---------- */
+.focus-full {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hero-bg);
+  color: var(--hero-fg);
+  overflow: hidden;
+}
+.focus-full[hidden] { display: none; }
+.full-time {
+  font-family: var(--display);
+  font-size: clamp(64px, 20vw, 320px);
+  line-height: .9;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
+}
+.full-exit {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: transparent;
+  color: inherit;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .35;
+  cursor: pointer;
+  transition: opacity .2s ease;
+}
+.focus-full:hover .full-exit,
+.full-exit:focus-visible { opacity: .9; }
 
 /* ---------- 静态鸡汤 ---------- */
 .quote {

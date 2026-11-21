@@ -107,6 +107,7 @@
             <button id="resetBtn" class="ghost" type="button">重置</button>
             <button id="saveBtn" class="btn-dark" type="button">结束并保存</button>
           </div>
+          <button id="fullBtn" class="ghost small full-btn" type="button" aria-label="进入全屏专注" title="进入全屏专注">全屏专注</button>
           <p class="mini">空格 开始/暂停 · R 重置 · 切换模式会累加已计时长</p>
         </div>
       </section>
@@ -213,6 +214,11 @@
       <span class="foot-mark">FOCUS<span>!</span></span>
     </div>
   </footer>
+</div>
+
+<div id="focusFull" class="focus-full" hidden>
+  <button id="fullExit" class="full-exit" type="button" aria-label="退出全屏" title="退出全屏">退出</button>
+  <div id="fullDigits" class="full-time">25:00</div>
 </div>
 
 <div id="renameModal" class="modal" hidden>

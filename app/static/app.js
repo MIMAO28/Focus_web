@@ -146,6 +146,7 @@ $("authForm").addEventListener("submit", async (e) => {
 });
 
 function showAuth() {
+  exitFull();
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
@@ -173,10 +174,55 @@ function showView(name, options = {}) {
     else a.removeAttribute("aria-current");
   });
   if (view === "stats") renderAnalytics();
-  if (options.scroll !== false) window.scrollTo(0, 0);
+  if (options.scroll !== false) {
+    const hash = (location.hash || "").replace("#", "");
+    if (view === "timer" && hash === "projects") $("projects").scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
+  }
 }
 
 window.addEventListener("hashchange", () => showView(currentView()));
+
+/* ---------------- 全屏专注 ---------------- */
+let fullActive = false;
+
+function syncFullButton() {
+  const btn = $("fullBtn");
+  if (!btn) return;
+  btn.textContent = fullActive ? "退出全屏" : "全屏专注";
+  btn.setAttribute("aria-label", fullActive ? "退出全屏" : "进入全屏专注");
+  btn.title = btn.getAttribute("aria-label");
+}
+
+async function enterFull() {
+  fullActive = true;
+  $("focusFull").hidden = false;
+  document.body.classList.add("is-full");
+  syncFullButton();
+  renderTimer();
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+  } catch (e) {
+    /* 浏览器拒绝原生全屏时仍使用覆盖层 */
+  }
+}
+
+function exitFull() {
+  fullActive = false;
+  $("focusFull").hidden = true;
+  document.body.classList.remove("is-full");
+  syncFullButton();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+$("fullBtn").addEventListener("click", () => (fullActive ? exitFull() : enterFull()));
+$("fullExit").addEventListener("click", exitFull);
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && fullActive) exitFull();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && fullActive) exitFull();
+});
 
 function enterApp(me) {
   user = { email: me.email, created_at: me.created_at, createdAt: me.created_at };
@@ -196,6 +242,7 @@ function enterApp(me) {
 }
 
 $("logoutBtn").addEventListener("click", async () => {
+  exitFull();
   resetTimer();
   clearTimerState();
   try {
@@ -763,14 +810,17 @@ function currentRemaining() {
 function renderTimer() {
   const card = document.querySelector(".timer-card");
   card.classList.toggle("running", timer.running);
+  let text;
   if (timer.mode === "countdown") {
-    $("digits").textContent = fmtClock(currentRemaining());
+    text = fmtClock(currentRemaining());
     const pct = timer.target ? Math.min(100, (elapsed() / timer.target) * 100) : 0;
     $("meterFill").style.width = `${pct}%`;
   } else {
-    $("digits").textContent = fmtClock(elapsed());
+    text = fmtClock(elapsed());
     $("meterFill").style.width = "0%";
   }
+  $("digits").textContent = text;
+  $("fullDigits").textContent = text;
   $("startBtn").textContent = timer.running ? "暂停" : elapsed() > 0 ? "继续" : "开始";
 }
 
