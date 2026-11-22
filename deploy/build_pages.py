@@ -47,12 +47,14 @@ def main():
 
     html = html.replace('<script src="./app.js"></script>', scripts)
     html = html.replace('src="./app.js"', 'src="./app.js?v=%s"' % version)
+    html = html.replace('src="./room.js"', 'src="./room.js?v=%s"' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
     shutil.copy(os.path.join(SRC, "styles.css"), os.path.join(OUT, "styles.css"))
     shutil.copy(os.path.join(SRC, "theme.js"), os.path.join(OUT, "theme.js"))
     shutil.copy(os.path.join(SRC, "app.js"), os.path.join(OUT, "app.js"))
+    shutil.copy(os.path.join(SRC, "room.js"), os.path.join(OUT, "room.js"))
     open(os.path.join(OUT, ".nojekyll"), "w", encoding="utf-8").write("")
 
     print("built site/ (%s): %s" % ("cloud" if cloud else "local", ", ".join(sorted(os.listdir(OUT)))))

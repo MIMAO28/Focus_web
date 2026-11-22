@@ -881,6 +881,117 @@ body.is-full { overflow: hidden; }
 }
 .todo-empty { color: var(--muted); font-size: 12.5px; margin: 14px 0 0; }
 
+/* ---------- 好友自习室 ---------- */
+.room-entry {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.room-card {
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 20px;
+  box-shadow: 6px 6px 0 var(--shadow);
+  padding: 22px;
+}
+.room-card h3 { margin: 0 0 6px; font-size: 17px; }
+.room-card p { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+.room-card input {
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 11px 14px;
+  border: var(--line);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 14px;
+}
+.room-card input:focus { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.room-card button { width: 100%; }
+
+.room-live { display: flex; flex-direction: column; gap: 16px; }
+.room-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 20px;
+  box-shadow: 6px 6px 0 var(--shadow);
+  padding: 16px 20px;
+}
+.room-title-box { flex: 1; min-width: 140px; }
+.room-title-box h3 { margin: 4px 0 0; font-size: 22px; letter-spacing: -.5px; }
+.room-title-box .eyebrow { font-size: 9.5px; }
+.room-code-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cream);
+  border: var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.room-code-box span { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.room-code-box strong { font-family: var(--display); font-size: 20px; letter-spacing: 3px; }
+.room-leave { margin-left: auto; }
+.room-hint { margin: 0; color: var(--muted); font-size: 12px; }
+.room-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.member-card {
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.member-head { display: flex; align-items: center; gap: 9px; }
+.member-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.member-name { font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+}
+.status-pill.focus { background: var(--green); color: var(--card3-fg); }
+.status-pill.rest { background: var(--cream); color: var(--muted); }
+.member-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.member-stats strong { color: var(--ink); }
+.room-empty { color: var(--muted); font-size: 12.5px; margin: 0; grid-column: 1 / -1; }
+.room-note { color: var(--muted); font-size: 12.5px; margin: 18px 0 0; line-height: 1.7; }
+
+@media (max-width: 860px) {
+  .room-entry { grid-template-columns: 1fr; }
+  .room-bar { align-items: flex-start; }
+  .room-leave { margin-left: 0; }
+}
+
 /* ---------- 三步 ---------- */
 .steps {
   max-width: 1180px;

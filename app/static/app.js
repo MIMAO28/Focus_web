@@ -53,6 +53,9 @@ function toast(message) {
   }, 2400);
 }
 
+window.FocusToast = toast;
+window.FocusTimerState = { running: false, seconds: 0, today: 0 };
+
 let audioCtx = null;
 function beep() {
   try {
@@ -158,6 +161,7 @@ $("authForm").addEventListener("submit", async (e) => {
 function showAuth() {
   exitFull();
   closePip();
+  window.dispatchEvent(new Event("focus-logout"));
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
@@ -165,7 +169,7 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "todo", "stats"];
+const VIEWS = ["timer", "todo", "room", "stats"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
@@ -1403,6 +1407,16 @@ function renderTimer() {
   $("startBtn").textContent = timer.running ? "暂停" : elapsed() > 0 ? "继续" : "开始";
   $("pipBtn").disabled = elapsed() < 5;
   $("pipBtn").title = $("pipBtn").disabled ? "开始计时后可用" : "在桌面悬浮显示计时";
+  const seconds = Math.floor(elapsed());
+  const prevState = window.FocusTimerState;
+  if (!prevState || prevState.running !== timer.running || prevState.seconds !== seconds) {
+    window.FocusTimerState = {
+      running: timer.running,
+      seconds,
+      today: (stats.today || 0) + seconds,
+    };
+    window.dispatchEvent(new CustomEvent("focus-timer", { detail: window.FocusTimerState }));
+  }
   if (pipWin && !pipWin.closed) {
     const doc = pipWin.document;
     const time = doc.getElementById("pipTime");

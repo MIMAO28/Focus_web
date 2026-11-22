@@ -64,6 +64,7 @@
       <nav class="nav" aria-label="页面切换">
         <a href="#timer" class="active" aria-current="page">计时</a>
         <a href="#todo">待办</a>
+        <a href="#room">自习室</a>
         <a href="#stats">统计</a>
       </nav>
       <div class="user">
@@ -192,6 +193,48 @@
     </div>
     <div id="todoList" class="grid"></div>
     <p id="todoEmpty" class="todo-empty">还没有待办，先写下今天要做的一件事。</p>
+  </section>
+  </div>
+
+  <div id="view-room" class="view" hidden>
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">STUDY TOGETHER</span>
+        <h2>好友自习室</h2>
+      </div>
+    </div>
+    <div id="roomEntry" class="room-entry">
+      <div class="room-card">
+        <h3>创建房间</h3>
+        <p>生成 6 位邀请码，发给朋友就能一起自习。</p>
+        <input id="roomName" maxlength="20" placeholder="房间名，例如：今晚冲刺">
+        <button id="roomCreate" class="btn-primary small" type="button">创建房间</button>
+      </div>
+      <div class="room-card">
+        <h3>加入房间</h3>
+        <p>输入朋友发来的邀请码，立刻加入。</p>
+        <input id="roomCode" maxlength="6" placeholder="例如：A1B2C3">
+        <button id="roomJoin" class="btn-primary small" type="button">加入房间</button>
+      </div>
+    </div>
+    <div id="roomLive" class="room-live" hidden>
+      <div class="room-bar">
+        <div class="room-title-box">
+          <span class="eyebrow">ROOM</span>
+          <h3 id="roomTitle">自习室</h3>
+        </div>
+        <div class="room-code-box">
+          <span>邀请码</span>
+          <strong id="roomCodeShow">------</strong>
+          <button id="roomCopy" class="ghost small" type="button">复制</button>
+        </div>
+        <button id="roomLeave" class="ghost small room-leave" type="button">离开</button>
+      </div>
+      <p class="room-hint">房间在有人在线时保持；离开后邀请码可能失效。</p>
+      <div id="roomMembers" class="room-members"></div>
+    </div>
+    <p id="roomNote" class="room-note">正在连接房间状态…</p>
   </section>
   </div>
 
@@ -325,5 +368,6 @@
 
 <script src="/static/theme.js"></script>
 <script src="/static/app.js"></script>
+<script type="module" src="/static/room.js"></script>
 </body>
 </html>
