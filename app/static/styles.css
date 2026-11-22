@@ -494,6 +494,79 @@ button, input, select { font-family: inherit; color: inherit; }
 .select-label { margin-top: 6px; margin-bottom: 16px; }
 .select-label select { cursor: pointer; }
 
+.project-picker { position: relative; margin-top: 7px; }
+.picker-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border: var(--line);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.picker-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.picker-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: 0 0 auto;
+}
+.picker-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-chevron {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .6;
+  transition: transform .15s ease;
+}
+.picker-btn[aria-expanded="true"] .picker-chevron { transform: rotate(180deg); }
+.picker-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--shadow);
+  max-height: 214px;
+  overflow-y: auto;
+}
+.picker-menu[hidden] { display: none; }
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.picker-item:hover,
+.picker-item:focus-visible { background: var(--yellow); outline: none; }
+.picker-item.active { background: var(--ink); color: var(--cream); }
+.picker-item.active .picker-dot { border-color: var(--cream); }
+.picker-item .picker-check { margin-left: auto; font-size: 11px; }
+.picker-empty { padding: 10px; font-size: 12px; color: var(--muted); }
+
 .custom-timer {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ let projects = [];
 let stats = { total: 0, today: 0, week: 0, count: 0 };
 let sessions = [];
 let todos = [];
+let currentProjectId = null;
 
 const timer = {
   mode: "countdown",
@@ -419,7 +420,7 @@ $("resendBtn").addEventListener("click", async () => {
 
 /* ---------------- 项目 ---------------- */
 function selectedProjectId() {
-  return $("projectSelect").value || null;
+  return currentProjectId || null;
 }
 
 const ARCHIVE_PREFIX = "已归档 · ";
@@ -437,9 +438,6 @@ function projectAction(label, onClick) {
 function renderProjects(preferredId) {
   const grid = $("projectGrid");
   grid.textContent = "";
-  const select = $("projectSelect");
-  const keep = preferredId != null ? String(preferredId) : select.value;
-  select.textContent = "";
   const actives = activeProjects();
 
   if (!actives.length) {
@@ -450,11 +448,6 @@ function renderProjects(preferredId) {
   }
 
   actives.forEach((p) => {
-    const option = document.createElement("option");
-    option.value = String(p.id);
-    option.textContent = p.name;
-    select.appendChild(option);
-
     const card = document.createElement("article");
     card.className = "project-card";
 
@@ -511,10 +504,128 @@ function renderProjects(preferredId) {
   });
 
   const ids = actives.map((p) => String(p.id));
+  let next = preferredId != null ? String(preferredId) : currentProjectId;
   if (timer.projectId && (timer.running || timer.base > 0) && ids.includes(String(timer.projectId))) {
-    select.value = String(timer.projectId);
-  } else if (keep && ids.includes(keep)) select.value = keep;
-  else if (ids.length) select.value = ids[0];
+    next = String(timer.projectId);
+  }
+  if (!next || !ids.includes(next)) next = ids[0] || null;
+  currentProjectId = next;
+  renderPicker();
+}
+
+/* ---------------- 项目选择器 ---------------- */
+function renderPicker() {
+  const actives = activeProjects();
+  if (!actives.some((p) => String(p.id) === String(currentProjectId))) {
+    currentProjectId = actives.length ? String(actives[0].id) : null;
+  }
+  const cur = actives.find((p) => String(p.id) === String(currentProjectId));
+  $("pickerName").textContent = cur ? cur.name : "先新建一个项目";
+  $("pickerDot").style.background = cur ? cur.color || "#FF3B2F" : "transparent";
+
+  const menu = $("projectMenu");
+  menu.textContent = "";
+  if (!actives.length) {
+    const li = document.createElement("li");
+    li.className = "picker-empty";
+    li.textContent = "还没有进行中的项目";
+    menu.appendChild(li);
+    return;
+  }
+  actives.forEach((p) => {
+    const selected = String(p.id) === String(currentProjectId);
+    const item = document.createElement("li");
+    item.className = "picker-item" + (selected ? " active" : "");
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", selected ? "true" : "false");
+    item.tabIndex = 0;
+
+    const dot = document.createElement("span");
+    dot.className = "picker-dot";
+    dot.style.background = p.color || "#FF3B2F";
+    const name = document.createElement("span");
+    name.className = "picker-name";
+    name.textContent = p.name;
+    const check = document.createElement("span");
+    check.className = "picker-check";
+    check.textContent = selected ? "✓" : "";
+
+    item.append(dot, name, check);
+    item.addEventListener("click", () => chooseProject(p.id));
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        chooseProject(p.id);
+      }
+    });
+    menu.appendChild(item);
+  });
+}
+
+function openPicker() {
+  $("projectMenu").hidden = false;
+  $("projectPickerBtn").setAttribute("aria-expanded", "true");
+}
+
+function closePicker() {
+  $("projectMenu").hidden = true;
+  $("projectPickerBtn").setAttribute("aria-expanded", "false");
+}
+
+$("projectPickerBtn").addEventListener("click", () => {
+  if ($("projectMenu").hidden) openPicker();
+  else closePicker();
+});
+document.addEventListener("click", (e) => {
+  if (!$("projectPicker").contains(e.target)) closePicker();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("projectMenu").hidden) closePicker();
+});
+
+async function chooseProject(nextId) {
+  nextId = nextId == null ? null : String(nextId);
+  closePicker();
+  if (!nextId || nextId === String(currentProjectId)) return;
+
+  const bound = timer.projectId;
+  const pending = timer.running || elapsed() > 0;
+  if (!pending || !bound) {
+    currentProjectId = nextId;
+    renderPicker();
+    persistTimer();
+    return;
+  }
+
+  const boundProject = projects.find((p) => String(p.id) === String(bound));
+  const ok = await askConfirm({
+    title: "切换项目",
+    message: `当前计时绑定在「${boundProject ? boundProject.name : "原项目"}」。\n切换项目会先结束并保存这条记录。`,
+    okText: "结束并切换",
+  });
+  if (!ok) return;
+
+  const secs = Math.floor(timer.mode === "countdown" && timer.autoSaved ? timer.target : elapsed());
+  stopTimer(true);
+  if (secs < 5) {
+    timer.base = 0;
+    timer.autoSaved = false;
+    timer.projectId = nextId;
+    currentProjectId = nextId;
+    clearTimerState();
+    renderPicker();
+    renderTimer();
+    persistTimer();
+    toast("记录不足 5 秒，未保存");
+    return;
+  }
+  const saved = await saveFocus(secs, false, bound, nextId);
+  if (!saved) {
+    timer.projectId = bound;
+    currentProjectId = bound;
+    renderPicker();
+    persistTimer();
+  }
 }
 
 async function addProject() {
@@ -1247,7 +1358,8 @@ function restoreTimer() {
   $("presetRow").style.display = timer.mode === "countdown" ? "flex" : "none";
   if (saved.projectId && projects.some((p) => String(p.id) === String(saved.projectId))) {
     timer.projectId = String(saved.projectId);
-    if (activeProjects().some((p) => String(p.id) === timer.projectId)) $("projectSelect").value = timer.projectId;
+    if (activeProjects().some((p) => String(p.id) === timer.projectId)) currentProjectId = timer.projectId;
+    renderPicker();
   }
 
   if (timer.running) {
@@ -1384,8 +1496,8 @@ async function saveFocus(seconds, auto = false, projectId = timer.projectId || s
     resetTimer();
     if (nextProjectId) {
       timer.projectId = String(nextProjectId);
-      const select = $("projectSelect");
-      if ([...select.options].some((o) => o.value === timer.projectId)) select.value = timer.projectId;
+      currentProjectId = timer.projectId;
+      renderPicker();
       persistTimer();
     }
     toast(`${auto ? "倒计时结束" : "已保存"}：${fmtDuration(seconds)} → ${data.project}`);
@@ -1474,46 +1586,6 @@ function applyCustomMinutes() {
 $("customApply").addEventListener("click", applyCustomMinutes);
 $("customMin").addEventListener("keydown", (e) => {
   if (e.key === "Enter") applyCustomMinutes();
-});
-
-$("projectSelect").addEventListener("change", async () => {
-  const select = $("projectSelect");
-  const nextId = select.value || null;
-  const bound = timer.projectId;
-  const pending = timer.running || elapsed() > 0;
-  if (!pending || !bound || String(bound) === String(nextId)) {
-    timer.projectId = nextId;
-    persistTimer();
-    return;
-  }
-  const boundProject = projects.find((p) => String(p.id) === String(bound));
-  const ok = await askConfirm({
-    title: "切换项目",
-    message: `当前计时绑定在「${boundProject ? boundProject.name : "原项目"}」。\n切换项目会先结束并保存这条记录。`,
-    okText: "结束并切换",
-  });
-  if (!ok) {
-    select.value = String(bound);
-    return;
-  }
-  const secs = Math.floor(timer.mode === "countdown" && timer.autoSaved ? timer.target : elapsed());
-  stopTimer(true);
-  if (secs < 5) {
-    timer.base = 0;
-    timer.autoSaved = false;
-    timer.projectId = nextId;
-    clearTimerState();
-    renderTimer();
-    persistTimer();
-    toast("记录不足 5 秒，未保存");
-    return;
-  }
-  const saved = await saveFocus(secs, false, bound, nextId);
-  if (!saved) {
-    select.value = String(bound);
-    timer.projectId = bound;
-    persistTimer();
-  }
 });
 
 document.addEventListener("visibilitychange", persistTimer);

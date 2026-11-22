@@ -117,9 +117,16 @@
               <button id="customApply" class="mini-apply" type="button" aria-label="应用自定义时长" title="应用">✓</button>
             </div>
           </div>
-          <label class="select-label">当前项目
-            <select id="projectSelect"></select>
-          </label>
+          <div class="select-label">当前项目
+            <div class="project-picker" id="projectPicker">
+              <button id="projectPickerBtn" class="picker-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span id="pickerDot" class="picker-dot"></span>
+                <span id="pickerName" class="picker-name">默认项目</span>
+                <svg class="picker-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+              </button>
+              <ul id="projectMenu" class="picker-menu" role="listbox" aria-label="选择项目" hidden></ul>
+            </div>
+          </div>
           <div class="timer-actions">
             <button id="startBtn" class="btn-primary" type="button">开始</button>
             <button id="saveBtn" class="btn-dark" type="button">结束并保存</button>
