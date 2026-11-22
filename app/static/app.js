@@ -199,7 +199,6 @@ let fullActive = false;
 function syncFullButton() {
   const btn = $("fullBtn");
   if (!btn) return;
-  btn.textContent = fullActive ? "退出全屏" : "全屏专注";
   btn.setAttribute("aria-label", fullActive ? "退出全屏" : "进入全屏专注");
   btn.title = btn.getAttribute("aria-label");
 }
@@ -250,25 +249,36 @@ function pipCss() {
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
     body {
+      position: relative;
       background: ${paper};
       color: ${ink};
       font-family: "Changa One", "Inter", system-ui, sans-serif;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
       height: 100vh;
       overflow: hidden;
       user-select: none;
     }
     .time {
-      font-size: 44px;
+      font-size: 50px;
       line-height: .9;
-      letter-spacing: -1.5px;
+      letter-spacing: -2px;
       font-variant-numeric: tabular-nums;
     }
-    .row { display: flex; gap: 8px; }
+    .row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity .15s ease;
+    }
+    body:hover .row,
+    body:focus-within .row { opacity: 1; }
     button {
       font-family: "Inter", system-ui, sans-serif;
       font-size: 12px;
@@ -307,7 +317,7 @@ async function openPip() {
     return;
   }
   try {
-    pipWin = await window.documentPictureInPicture.requestWindow({ width: 260, height: 132 });
+    pipWin = await window.documentPictureInPicture.requestWindow({ width: 240, height: 118 });
   } catch (e) {
     toast("悬浮窗打开失败，请检查浏览器权限");
     return;
@@ -344,7 +354,7 @@ async function openPip() {
     pipStyle = null;
   });
   try {
-    pipWin.resizeTo(260, 132);
+    pipWin.resizeTo(240, 118);
   } catch (e) {
     /* 部分浏览器不允许脚本调整悬浮窗尺寸 */
   }
@@ -1234,8 +1244,7 @@ function restoreTimer() {
   document.querySelectorAll("#modeTabs [data-mode]").forEach((b) => {
     b.classList.toggle("active", b.dataset.mode === timer.mode);
   });
-  $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
-  $("customTimer").style.display = timer.mode === "countdown" ? "flex" : "none";
+  $("presetRow").style.display = timer.mode === "countdown" ? "flex" : "none";
   if (saved.projectId && projects.some((p) => String(p.id) === String(saved.projectId))) {
     timer.projectId = String(saved.projectId);
     if (activeProjects().some((p) => String(p.id) === timer.projectId)) $("projectSelect").value = timer.projectId;
@@ -1407,8 +1416,7 @@ document.querySelectorAll("#modeTabs [data-mode]").forEach((btn) => {
     const carried = Math.floor(elapsed());
     timer.mode = btn.dataset.mode;
     document.querySelectorAll("#modeTabs [data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
-    $("presets").style.display = timer.mode === "countdown" ? "flex" : "none";
-    $("customTimer").style.display = timer.mode === "countdown" ? "flex" : "none";
+    $("presetRow").style.display = timer.mode === "countdown" ? "flex" : "none";
     timer.base = carried;
     timer.target = carried + 25 * 60;
     timer.autoSaved = false;

@@ -92,34 +92,37 @@
         </div>
 
         <div class="timer-card">
-          <div class="mode-tabs" id="modeTabs">
-            <button class="mode active" data-mode="countdown" type="button">倒计时</button>
-            <button class="mode" data-mode="countup" type="button">正计时</button>
+          <div class="timer-head">
+            <div class="mode-tabs" id="modeTabs">
+              <button class="mode active" data-mode="countdown" type="button">倒计时</button>
+              <button class="mode" data-mode="countup" type="button">正计时</button>
+            </div>
+            <div class="timer-tools">
+              <button id="resetBtn" class="icon-tool" type="button" aria-label="重置" title="重置"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5V5h2.5"/></svg></button>
+              <button id="pipBtn" class="icon-tool" type="button" aria-label="悬浮窗" title="开始计时后可用悬浮窗" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="2"/><rect x="7.5" y="7.5" width="5" height="4" rx="1"/></svg></button>
+              <button id="fullBtn" class="icon-tool" type="button" aria-label="进入全屏专注" title="进入全屏专注"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/></svg></button>
+            </div>
           </div>
           <div class="digits" id="digits">25:00</div>
           <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
-          <div class="presets" id="presets">
-            <button class="preset active" data-min="25" type="button">25 分</button>
-            <button class="preset" data-min="45" type="button">45 分</button>
-            <button class="preset" data-min="60" type="button">60 分</button>
-          </div>
-          <div class="custom-timer" id="customTimer">
-            <span>自定义</span>
-            <input id="customMin" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="25" aria-label="自定义倒计时分钟数">
-            <span>分钟</span>
-            <button id="customApply" class="ghost small" type="button">设置</button>
+          <div class="preset-row" id="presetRow">
+            <div class="presets" id="presets">
+              <button class="preset active" data-min="25" type="button">25 分</button>
+              <button class="preset" data-min="45" type="button">45 分</button>
+              <button class="preset" data-min="60" type="button">60 分</button>
+            </div>
+            <div class="custom-timer" id="customTimer">
+              <span>自定</span>
+              <input id="customMin" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="25" aria-label="自定义倒计时分钟数">
+              <button id="customApply" class="mini-apply" type="button" aria-label="应用自定义时长" title="应用">✓</button>
+            </div>
           </div>
           <label class="select-label">当前项目
             <select id="projectSelect"></select>
           </label>
           <div class="timer-actions">
             <button id="startBtn" class="btn-primary" type="button">开始</button>
-            <button id="resetBtn" class="ghost" type="button">重置</button>
             <button id="saveBtn" class="btn-dark" type="button">结束并保存</button>
-          </div>
-          <div class="timer-tools">
-            <button id="pipBtn" class="ghost small" type="button" disabled title="开始计时后可用">悬浮窗</button>
-            <button id="fullBtn" class="ghost small" type="button" aria-label="进入全屏专注" title="进入全屏专注">全屏专注</button>
           </div>
           <p class="mini">空格 开始/暂停 · R 重置 · 计时中切换项目会先结束并保存当前记录</p>
         </div>
