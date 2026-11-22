@@ -1193,6 +1193,15 @@ body.is-full { overflow: hidden; }
 }
 .modal-card input:focus { box-shadow: 0 0 0 3px var(--ring); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.confirm-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 0;
+  white-space: pre-line;
+}
+#confirmOk.danger { background: var(--red); color: var(--cream); border-color: var(--ink); }
+#confirmModal { z-index: 160; }
 
 /* ---------- 项目归档与详情 ---------- */
 .archived {

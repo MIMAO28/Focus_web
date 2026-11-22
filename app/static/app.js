@@ -457,6 +457,41 @@ $("renameModal").addEventListener("click", (e) => {
   if (e.target.id === "renameModal") closeRename();
 });
 
+/* ---------------- 站内确认框 ---------------- */
+let confirmResolve = null;
+
+function askConfirm({ title = "确认操作", message = "", okText = "确定", danger = false } = {}) {
+  $("confirmTitle").textContent = title;
+  $("confirmText").textContent = message;
+  $("confirmOk").textContent = okText;
+  $("confirmOk").classList.toggle("danger", !!danger);
+  $("confirmModal").hidden = false;
+  $("confirmOk").focus();
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+  });
+}
+
+function closeConfirm(result) {
+  if (!confirmResolve) return;
+  const resolve = confirmResolve;
+  confirmResolve = null;
+  $("confirmModal").hidden = true;
+  resolve(result);
+}
+
+$("confirmOk").addEventListener("click", () => closeConfirm(true));
+$("confirmCancel").addEventListener("click", () => closeConfirm(false));
+$("confirmModal").addEventListener("click", (e) => {
+  if (e.target.id === "confirmModal") closeConfirm(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("confirmModal").hidden) {
+    e.stopImmediatePropagation();
+    closeConfirm(false);
+  }
+});
+
 async function archiveProject(project) {
   if (isArchived(project)) return;
   if ((timer.running || timer.base > 0) && String(timer.projectId) === String(project.id)) {
@@ -468,12 +503,20 @@ async function archiveProject(project) {
     return;
   }
   if (!project.count) {
-    if (window.confirm(`“${project.name}”还没有记录，直接删除？`)) deleteProject(project, true);
+    const remove = await askConfirm({
+      title: "删除项目",
+      message: `“${project.name}”还没有专注记录，直接删除？`,
+      okText: "删除",
+      danger: true,
+    });
+    if (remove) deleteProject(project, true);
     return;
   }
-  const ok = window.confirm(
-    `归档“${project.name}”？\n${project.count} 次记录（共 ${fmtDuration(project.total)}）会保留在统计里，项目从列表隐藏。`
-  );
+  const ok = await askConfirm({
+    title: "归档项目",
+    message: `“${project.name}”有 ${project.count} 次记录（共 ${fmtDuration(project.total)}）。\n归档后项目从列表隐藏，记录会保留在统计里。`,
+    okText: "归档",
+  });
   if (!ok) return;
   try {
     const data = await api(`/api/projects/${project.id}`, {
@@ -514,8 +557,14 @@ async function deleteProject(project, skipConfirm = false) {
     return;
   }
   if (!skipConfirm) {
-    const extra = project.count ? `该项目的 ${project.count} 次记录会一并清除，且无法恢复。` : "";
-    if (!window.confirm(`彻底删除“${project.name}”？${extra}`)) return;
+    const extra = project.count ? `\n该项目的 ${project.count} 次记录会一并清除，且无法恢复。` : "";
+    const ok = await askConfirm({
+      title: "彻底删除项目",
+      message: `确定删除“${project.name}”？${extra}`,
+      okText: "删除并清除",
+      danger: true,
+    });
+    if (!ok) return;
   }
   try {
     const data = await api(`/api/projects/${project.id}`, { method: "DELETE" });
@@ -594,7 +643,7 @@ $("detailArchive").addEventListener("click", () => detailTarget && archiveProjec
 $("detailRestore").addEventListener("click", () => detailTarget && restoreProject(detailTarget));
 $("detailDelete").addEventListener("click", () => detailTarget && deleteProject(detailTarget));
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !$("detailModal").hidden) closeDetail();
+  if (e.key === "Escape" && $("confirmModal").hidden && !$("detailModal").hidden) closeDetail();
 });
 
 $("addProject").addEventListener("click", addProject);
@@ -1298,9 +1347,11 @@ $("projectSelect").addEventListener("change", async () => {
     return;
   }
   const boundProject = projects.find((p) => String(p.id) === String(bound));
-  const ok = window.confirm(
-    `当前计时绑定在「${boundProject ? boundProject.name : "原项目"}」。\n切换项目会先结束并保存这条记录，继续吗？`
-  );
+  const ok = await askConfirm({
+    title: "切换项目",
+    message: `当前计时绑定在「${boundProject ? boundProject.name : "原项目"}」。\n切换项目会先结束并保存这条记录。`,
+    okText: "结束并切换",
+  });
   if (!ok) {
     select.value = String(bound);
     return;
@@ -1329,7 +1380,7 @@ document.addEventListener("visibilitychange", persistTimer);
 window.addEventListener("beforeunload", persistTimer);
 
 document.addEventListener("keydown", (e) => {
-  if ($("appView").hidden) return;
+  if ($("appView").hidden || !$("confirmModal").hidden) return;
   const tag = (e.target.tagName || "").toLowerCase();
   if (tag === "input" || tag === "select" || tag === "textarea" || tag === "button") return;
   if (e.code === "Space") {
