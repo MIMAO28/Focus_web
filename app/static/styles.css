@@ -491,7 +491,8 @@ button, input, select { font-family: inherit; color: inherit; }
 .timer-actions button { padding: 12px 6px; font-size: 13px; }
 
 .mini { color: var(--muted); font-size: 11.5px; text-align: center; margin: 12px 0 0; line-height: 1.5; }
-.full-btn { width: 100%; margin-top: 8px; }
+.timer-tools { display: flex; gap: 8px; margin-top: 8px; }
+.timer-tools button { flex: 1; }
 body.is-full { overflow: hidden; }
 
 /* ---------- 全屏专注 ---------- */

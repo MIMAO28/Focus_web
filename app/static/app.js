@@ -156,6 +156,7 @@ $("authForm").addEventListener("submit", async (e) => {
 
 function showAuth() {
   exitFull();
+  closePip();
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
@@ -232,6 +233,126 @@ document.addEventListener("fullscreenchange", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && fullActive) exitFull();
 });
+
+/* ---------------- 悬浮计时窗 ---------------- */
+let pipWin = null;
+let pipStyle = null;
+
+function pipCss() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+  const ink = v("--ink", "#1a160a");
+  const paper = v("--paper", "#f3e9e0");
+  const cream = v("--cream", "#fff");
+  const red = v("--red", "#e8442e");
+
+  return `
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: ${paper};
+      color: ${ink};
+      font-family: "Changa One", "Inter", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+    .time {
+      font-size: 44px;
+      line-height: .9;
+      letter-spacing: -1.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .row { display: flex; gap: 8px; }
+    button {
+      font-family: "Inter", system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 15px;
+      border-radius: 999px;
+      border: 2px solid ${ink};
+      background: transparent;
+      color: ${ink};
+      cursor: pointer;
+    }
+    button:disabled { opacity: .35; cursor: default; }
+    #pipToggle { background: ${ink}; color: ${cream}; }
+    #pipEnd { border-color: ${red}; color: ${red}; }
+  `;
+}
+
+function applyPipTheme() {
+  if (!pipWin || pipWin.closed || !pipStyle) return;
+  pipStyle.textContent = pipCss();
+}
+
+function closePip() {
+  if (pipWin && !pipWin.closed) pipWin.close();
+  pipWin = null;
+  pipStyle = null;
+}
+
+async function openPip() {
+  if (!("documentPictureInPicture" in window)) {
+    toast("当前浏览器不支持悬浮窗，请使用 Edge 或 Chrome");
+    return;
+  }
+  if (pipWin && !pipWin.closed) {
+    pipWin.focus();
+    return;
+  }
+  try {
+    pipWin = await window.documentPictureInPicture.requestWindow({ width: 260, height: 132 });
+  } catch (e) {
+    toast("悬浮窗打开失败，请检查浏览器权限");
+    return;
+  }
+  const doc = pipWin.document;
+  doc.title = "FOCUS! 计时";
+  const font = doc.createElement("link");
+  font.rel = "stylesheet";
+  font.href = "https://fonts.googleapis.com/css2?family=Changa+One&family=Inter:wght@700;800&display=swap";
+  doc.head.appendChild(font);
+  pipStyle = doc.createElement("style");
+  doc.head.appendChild(pipStyle);
+  applyPipTheme();
+
+  doc.body.innerHTML = `
+    <div class="time" id="pipTime">25:00</div>
+    <div class="row">
+      <button id="pipToggle" type="button">暂停</button>
+      <button id="pipEnd" type="button">结束</button>
+    </div>`;
+
+  doc.getElementById("pipToggle").addEventListener("click", startTimer);
+  doc.getElementById("pipEnd").addEventListener("click", async () => {
+    const secs = Math.floor(timer.mode === "countdown" && timer.autoSaved ? timer.target : elapsed());
+    if (secs < 5) {
+      toast("先开始计时，满 5 秒后可保存");
+      return;
+    }
+    const saved = await saveFocus(secs, false);
+    if (saved) closePip();
+  });
+  pipWin.addEventListener("pagehide", () => {
+    pipWin = null;
+    pipStyle = null;
+  });
+  try {
+    pipWin.resizeTo(260, 132);
+  } catch (e) {
+    /* 部分浏览器不允许脚本调整悬浮窗尺寸 */
+  }
+  renderTimer();
+}
+
+$("pipBtn").addEventListener("click", openPip);
+window.addEventListener("focus-theme", applyPipTheme);
 
 function enterApp(me) {
   user = {
@@ -1159,6 +1280,17 @@ function renderTimer() {
   $("digits").textContent = text;
   $("fullDigits").textContent = text;
   $("startBtn").textContent = timer.running ? "暂停" : elapsed() > 0 ? "继续" : "开始";
+  $("pipBtn").disabled = elapsed() < 5;
+  $("pipBtn").title = $("pipBtn").disabled ? "开始计时后可用" : "在桌面悬浮显示计时";
+  if (pipWin && !pipWin.closed) {
+    const doc = pipWin.document;
+    const time = doc.getElementById("pipTime");
+    if (time) time.textContent = text;
+    const toggle = doc.getElementById("pipToggle");
+    if (toggle) toggle.textContent = timer.running ? "暂停" : elapsed() > 0 ? "继续" : "开始";
+    const end = doc.getElementById("pipEnd");
+    if (end) end.disabled = elapsed() < 5;
+  }
 }
 
 function tick() {
