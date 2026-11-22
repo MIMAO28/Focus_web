@@ -744,3 +744,29 @@ Pages 部署 success，线上含 pipBtn、timer-tools 与 documentPictureInPictu
 - `67aef5c` P38 悬浮窗纯净时间与计时卡精简
 
 Pages 部署 success，线上含 timer-head、presetRow、icon-tool。
+
+## P39 项目选择器美化
+
+**需求**
+
+原生“切换项目”下拉很 low，需要与站点风格统一。
+
+**实现**
+
+1. 用按钮 + 浮层替换 select：色点、项目名、箭头；菜单带主题底色、圆角、描边与硬投影。
+2. 选项含色点、当前项深色 ✓、悬停黄色；菜单最大高度 214px 可滚动。
+3. 交互：点击开合、箭头旋转、点击外部/Esc 关闭、点击与 Enter/Space 选择；补 aria 属性。
+4. 逻辑重构：新增 `currentProjectId` 与 `chooseProject()`，保留计时中切换的保存确认流程；归档/恢复/改名/新建后同步下拉。
+
+**验证（Edge）**
+
+- 页面无 #projectSelect；初始“阅读”，菜单默认收起。
+- 展开 3 项（默认项目、写作、阅读），当前项深色 ✓，菜单宽度与按钮一致。
+- 选“写作”即时生效；计时中选择“默认项目”弹站内确认，取消不改、确认生成“写作 7 秒”并切换。
+- Esc 与外部点击均关闭；控制台 0 错误。
+
+**提交**
+
+- `bebf6c1` P39 自制项目选择器
+
+Pages 部署 success，线上含 projectPicker，已无原生 select。
