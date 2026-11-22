@@ -8,6 +8,8 @@ let stats = { total: 0, today: 0, week: 0, count: 0 };
 let sessions = [];
 let todos = [];
 let currentProjectId = null;
+const AVATARS = ["🙂", "🐱", "🐶", "🦊", "🐼", "🦁", "🐸", "🐧", "🦉", "🐨", "🐯", "🦄"];
+let profile = { username: "", avatar: "🙂", bio: "", goalMinutes: 0, defaultMinutes: 25 };
 
 const timer = {
   mode: "countdown",
@@ -169,7 +171,7 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "todo", "room", "stats"];
+const VIEWS = ["timer", "todo", "room", "stats", "profile"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
@@ -376,12 +378,19 @@ function enterApp(me) {
     created_at: me.created_at,
     createdAt: me.created_at,
   };
+  profile = {
+    username: me.username || "",
+    avatar: me.avatar || "🙂",
+    bio: me.bio || "",
+    goalMinutes: Number(me.goalMinutes) || 0,
+    defaultMinutes: Number(me.defaultMinutes) || 25,
+  };
   stats = me.stats || stats;
   projects = me.projects || [];
   $("authView").hidden = true;
   $("appView").hidden = false;
-  $("userEmail").textContent = me.username || (me.email || "").split("@")[0];
-  $("userEmail").title = me.email;
+  renderUserChip();
+  renderProfile();
   $("resendBtn").hidden = true;
   pickQuote();
   renderProjects();
@@ -391,8 +400,126 @@ function enterApp(me) {
   loadSessions();
   restoreTimer();
   renderTimer();
+  applyDefaultDuration();
   showView(currentView(), { scroll: false });
 }
+
+/* ---------------- 个人资料 ---------------- */
+function renderUserChip() {
+  const name = profile.username || (user && user.email ? user.email.split("@")[0] : "");
+  $("navAvatar").textContent = profile.avatar || "🙂";
+  $("userEmail").textContent = name;
+  $("userEmail").title = user ? user.email : "";
+}
+
+function renderProfile() {
+  if (!user) return;
+  const name = profile.username || user.email.split("@")[0];
+  $("profileAvatarBig").textContent = profile.avatar || "🙂";
+  $("profileNamePreview").textContent = name;
+  $("profileEmail").textContent = user.email;
+  $("profileEmailText").textContent = user.email;
+  const created = user.createdAt || user.created_at;
+  $("profileCreated").textContent = created ? new Date(created * 1000).toLocaleDateString("zh-CN") : "-";
+  $("profileTotal").textContent = fmtDuration(stats.total || 0);
+  $("profileToday").textContent = fmtDuration(stats.today || 0);
+  $("profileName").value = name;
+  $("profileBio").value = profile.bio || "";
+  $("profileGoal").value = profile.goalMinutes || "";
+  $("profileDefault").value = profile.defaultMinutes || "";
+
+  const picker = $("avatarPicker");
+  picker.textContent = "";
+  AVATARS.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "avatar-option" + (emoji === (profile.avatar || "🙂") ? " active" : "");
+    btn.textContent = emoji;
+    btn.setAttribute("aria-label", `选择头像 ${emoji}`);
+    btn.addEventListener("click", () => {
+      profile.avatar = emoji;
+      renderProfile();
+    });
+    picker.appendChild(btn);
+  });
+  renderUserChip();
+}
+
+async function saveProfile() {
+  const name = $("profileName").value.trim();
+  if (name.length < 2 || name.length > 20) {
+    toast("昵称请填 2-20 个字符");
+    return;
+  }
+  const goalMinutes = Number($("profileGoal").value) || 0;
+  const defaultMinutes = Number($("profileDefault").value) || 25;
+  if (goalMinutes < 0 || goalMinutes > 1440) {
+    toast("每日目标请填 0-1440 分钟");
+    return;
+  }
+  if (defaultMinutes < 1 || defaultMinutes > 600) {
+    toast("默认专注请填 1-600 分钟");
+    return;
+  }
+  const bio = $("profileBio").value.trim().slice(0, 80);
+  const btn = $("profileSave");
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  try {
+    const data = await api("/api/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ username: name, avatar: profile.avatar, bio, goalMinutes, defaultMinutes }),
+    });
+    profile = {
+      username: data.username || name,
+      avatar: data.avatar || profile.avatar,
+      bio: data.bio || "",
+      goalMinutes: Number(data.goalMinutes) || 0,
+      defaultMinutes: Number(data.defaultMinutes) || 25,
+    };
+    if (data.email) user.email = data.email;
+    if (data.stats) stats = data.stats;
+    renderProfile();
+    renderStats();
+    if (!timer.running && timer.base === 0 && profile.defaultMinutes) {
+      timer.target = profile.defaultMinutes * 60;
+      timer.autoSaved = false;
+      $("customMin").value = profile.defaultMinutes;
+      document.querySelectorAll("#presets [data-min]").forEach((b) => {
+        b.classList.toggle("active", Number(b.dataset.min) === profile.defaultMinutes);
+      });
+      renderTimer();
+      persistTimer();
+    }
+    window.dispatchEvent(new Event("focus-profile"));
+    toast("资料已保存");
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "保存资料";
+  }
+}
+
+function applyDefaultDuration() {
+  const key = timerKey();
+  if (!key || localStorage.getItem(key)) return;
+  if (timer.running || timer.base > 0) return;
+  const minutes = Number(profile.defaultMinutes) || 0;
+  if (minutes < 1) return;
+  timer.target = minutes * 60;
+  timer.autoSaved = false;
+  $("customMin").value = minutes;
+  document.querySelectorAll("#presets [data-min]").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.min) === minutes);
+  });
+  renderTimer();
+}
+
+$("profileSave").addEventListener("click", saveProfile);
+$("profileChip").addEventListener("click", () => {
+  location.hash = "profile";
+});
 
 $("logoutBtn").addEventListener("click", async () => {
   exitFull();

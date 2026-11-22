@@ -23,6 +23,16 @@
     return text || "同学";
   }
 
+  function avatar() {
+    const text = ($("navAvatar") && $("navAvatar").textContent.trim()) || "";
+    return text || "🙂";
+  }
+
+  function projectName() {
+    const text = ($("pickerName") && $("pickerName").textContent.trim()) || "";
+    return text === "先新建一个项目" ? "" : text;
+  }
+
   function fmtDuration(sec) {
     sec = Math.max(0, Math.floor(sec || 0));
     if (sec <= 0) return "0 分";
@@ -53,6 +63,8 @@
     const state = timerState();
     return {
       name: nickname(),
+      avatar: avatar(),
+      project: projectName(),
       status: state.running ? "focus" : "rest",
       seconds: state.seconds,
       today: state.today,
@@ -209,6 +221,8 @@
       rows.push({
         key,
         name: item.name || "同学",
+        avatar: item.avatar || "🙂",
+        project: item.project || "",
         status: item.status === "focus" ? "focus" : "rest",
         seconds: Number(item.seconds) || 0,
         today: Number(item.today) || 0,
@@ -236,7 +250,7 @@
       head.className = "member-head";
       const avatar = document.createElement("span");
       avatar.className = "member-avatar";
-      avatar.textContent = row.name.slice(0, 1).toUpperCase();
+      avatar.textContent = row.avatar;
       const name = document.createElement("strong");
       name.className = "member-name";
       name.textContent = row.name + (row.key === memberKey ? "（我）" : "");
@@ -254,6 +268,12 @@
       stats.append(cur, today);
 
       card.append(head, stats);
+      if (row.project) {
+        const project = document.createElement("div");
+        project.className = "member-project";
+        project.textContent = `项目 · ${row.project}`;
+        card.appendChild(project);
+      }
       box.appendChild(card);
     });
   }
@@ -323,6 +343,7 @@
       }
     });
     window.addEventListener("focus-logout", () => teardown(false));
+    window.addEventListener("focus-profile", () => trackNow(true));
     window.addEventListener("pagehide", () => {
       if (channel) channel.untrack();
     });

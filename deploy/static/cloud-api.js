@@ -200,9 +200,14 @@
     const user = currentUser();
     if (!user) fail("请先登录", 401);
     const { projects, sessions } = await fetchAll();
+    const meta = user.user_metadata || {};
     return {
       email: user.email,
-      username: (user.user_metadata && user.user_metadata.username) || "",
+      username: meta.username || "",
+      avatar: meta.avatar || "🙂",
+      bio: meta.bio || "",
+      goalMinutes: Number(meta.goal_minutes) || 0,
+      defaultMinutes: Number(meta.default_minutes) || 25,
       created_at: toEpoch(user.created_at) || Math.floor(Date.now() / 1000),
       stats: userStats(sessions),
       projects: projectStats(projects, sessions),
@@ -265,6 +270,35 @@
     }
 
     if (path === "/api/me" && method === "GET") {
+      return payload();
+    }
+
+    if (path === "/api/profile" && method === "PATCH") {
+      const username = String(body.username || "").trim();
+      const avatar = String(body.avatar || "🙂").slice(0, 4);
+      const bio = String(body.bio || "").slice(0, 80);
+      const goalMinutes = Number(body.goalMinutes) || 0;
+      const defaultMinutes = Number(body.defaultMinutes) || 25;
+      if (username.length < 2 || username.length > 20) fail("用户名请填 2-20 个字符");
+      if (goalMinutes < 0 || goalMinutes > 1440) fail("每日目标请填 0-1440 分钟");
+      if (defaultMinutes < 1 || defaultMinutes > 600) fail("默认专注请填 1-600 分钟");
+      const updated = await authed("/auth/v1/user", {
+        method: "PUT",
+        body: {
+          data: {
+            username,
+            avatar,
+            bio,
+            goal_minutes: goalMinutes,
+            default_minutes: defaultMinutes,
+          },
+        },
+      });
+      const session = loadSession();
+      if (session) {
+        session.user = updated;
+        saveSession(session);
+      }
       return payload();
     }
 

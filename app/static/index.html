@@ -66,9 +66,13 @@
         <a href="#todo">待办</a>
         <a href="#room">自习室</a>
         <a href="#stats">统计</a>
+        <a href="#profile">我的</a>
       </nav>
       <div class="user">
-        <span id="userEmail" class="user-email"></span>
+        <button id="profileChip" class="user-chip" type="button" aria-label="个人资料">
+          <span id="navAvatar" class="nav-avatar">🙂</span>
+          <span id="userEmail" class="user-email"></span>
+        </button>
         <button id="themeBtn" class="ghost small" type="button">◐ 主题</button>
         <button id="modeBtn" class="ghost small icon-btn" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
         <button id="logoutBtn" class="ghost small" type="button">退出</button>
@@ -235,6 +239,57 @@
       <div id="roomMembers" class="room-members"></div>
     </div>
     <p id="roomNote" class="room-note">正在连接房间状态…</p>
+  </section>
+  </div>
+
+  <div id="view-profile" class="view" hidden>
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">YOUR PROFILE</span>
+        <h2>个人资料</h2>
+      </div>
+    </div>
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="profile-preview">
+          <span id="profileAvatarBig" class="profile-avatar-big">🙂</span>
+          <div>
+            <strong id="profileNamePreview">用户名</strong>
+            <p id="profileEmail">you@example.com</p>
+          </div>
+        </div>
+        <div class="profile-field">
+          <span class="profile-label">头像</span>
+          <div id="avatarPicker" class="avatar-picker"></div>
+        </div>
+        <label class="profile-field">昵称
+          <input id="profileName" maxlength="20" placeholder="2-20 个字符">
+        </label>
+        <label class="profile-field">个人简介
+          <textarea id="profileBio" maxlength="80" rows="3" placeholder="一句话介绍自己，最多 80 字"></textarea>
+        </label>
+        <div class="profile-row">
+          <label class="profile-field">每日目标（分钟）
+            <input id="profileGoal" type="number" min="0" max="1440" step="5" placeholder="例如 120">
+          </label>
+          <label class="profile-field">默认专注（分钟）
+            <input id="profileDefault" type="number" min="1" max="600" step="5" placeholder="25">
+          </label>
+        </div>
+        <button id="profileSave" class="btn-primary" type="button">保存资料</button>
+      </div>
+      <div class="profile-card profile-info">
+        <h3>账号信息</h3>
+        <dl class="profile-dl">
+          <dt>邮箱</dt><dd id="profileEmailText">-</dd>
+          <dt>注册时间</dt><dd id="profileCreated">-</dd>
+          <dt>累计专注</dt><dd id="profileTotal">-</dd>
+          <dt>今日专注</dt><dd id="profileToday">-</dd>
+        </dl>
+        <p class="profile-tip">头像与昵称会显示在右上角与自习室里；默认专注时长会在下一次新计时开始时使用。</p>
+      </div>
+    </div>
   </section>
   </div>
 

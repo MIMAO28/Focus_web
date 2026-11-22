@@ -37,6 +37,14 @@ class ProjectIn(BaseModel):
     name: str
 
 
+class ProfileIn(BaseModel):
+    username: str
+    avatar: str = "🙂"
+    bio: str = ""
+    goalMinutes: int = 0
+    defaultMinutes: int = 25
+
+
 class FocusIn(BaseModel):
     project_id: int
     mode: str
@@ -51,7 +59,8 @@ def current_user(request: Request):
     with closing(db.connect()) as conn:
         row = conn.execute(
             """
-            SELECT u.id, u.email, u.username, u.created_at, s.expires_at
+            SELECT u.id, u.email, u.username, u.avatar, u.bio, u.goal_minutes,
+                   u.default_minutes, u.created_at, s.expires_at
             FROM auth_sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = ?
             """,
@@ -67,6 +76,10 @@ def current_user(request: Request):
             "id": row["id"],
             "email": row["email"],
             "username": row["username"] or "",
+            "avatar": row["avatar"] or "🙂",
+            "bio": row["bio"] or "",
+            "goal_minutes": row["goal_minutes"] or 0,
+            "default_minutes": row["default_minutes"] or 25,
             "created_at": row["created_at"],
         }
 
@@ -76,6 +89,10 @@ def me_payload(conn, user):
     return {
         "email": user["email"],
         "username": user.get("username", ""),
+        "avatar": user.get("avatar") or "🙂",
+        "bio": user.get("bio") or "",
+        "goalMinutes": user.get("goal_minutes") or 0,
+        "defaultMinutes": user.get("default_minutes") or 25,
         "created_at": user["created_at"],
         "stats": stats,
         "projects": db.project_stats(conn, user["id"]),
@@ -133,7 +150,16 @@ def register(body: Credentials, response: Response):
         )
         conn.commit()
         begin_session(conn, user_id, response)
-        user = {"id": user_id, "email": email, "username": username, "created_at": now}
+        user = {
+            "id": user_id,
+            "email": email,
+            "username": username,
+            "avatar": "🙂",
+            "bio": "",
+            "goal_minutes": 0,
+            "default_minutes": 25,
+            "created_at": now,
+        }
         return me_payload(conn, user)
 
 
@@ -143,7 +169,7 @@ def login(body: Credentials, response: Response):
     password = body.password or ""
     with closing(db.connect()) as conn:
         row = conn.execute(
-            "SELECT id, email, username, password_hash, salt, created_at FROM users WHERE email = ?",
+            "SELECT id, email, username, avatar, bio, goal_minutes, default_minutes, password_hash, salt, created_at FROM users WHERE email = ?",
             (email,),
         ).fetchone()
         if not row or not auth.verify_password(password, row["salt"], row["password_hash"]):
@@ -153,6 +179,10 @@ def login(body: Credentials, response: Response):
             "id": row["id"],
             "email": row["email"],
             "username": row["username"] or "",
+            "avatar": row["avatar"] or "🙂",
+            "bio": row["bio"] or "",
+            "goal_minutes": row["goal_minutes"] or 0,
+            "default_minutes": row["default_minutes"] or 25,
             "created_at": row["created_at"],
         }
         return me_payload(conn, user)
@@ -167,6 +197,36 @@ def logout(request: Request, response: Response):
             conn.commit()
     response.delete_cookie(COOKIE_NAME)
     return {"ok": True}
+
+
+@app.patch("/api/profile")
+def update_profile(body: ProfileIn, request: Request):
+    user = current_user(request)
+    username = (body.username or "").strip()
+    avatar = (body.avatar or "🙂")[:4]
+    bio = (body.bio or "")[:80]
+    if len(username) < 2 or len(username) > 20:
+        raise HTTPException(status_code=400, detail="用户名请填 2-20 个字符")
+    if body.goalMinutes < 0 or body.goalMinutes > 1440:
+        raise HTTPException(status_code=400, detail="每日目标请填 0-1440 分钟")
+    if body.defaultMinutes < 1 or body.defaultMinutes > 600:
+        raise HTTPException(status_code=400, detail="默认专注请填 1-600 分钟")
+    with closing(db.connect()) as conn:
+        conn.execute(
+            "UPDATE users SET username = ?, avatar = ?, bio = ?, goal_minutes = ?, default_minutes = ? WHERE id = ?",
+            (username, avatar, bio, body.goalMinutes, body.defaultMinutes, user["id"]),
+        )
+        conn.commit()
+        user.update(
+            {
+                "username": username,
+                "avatar": avatar,
+                "bio": bio,
+                "goal_minutes": body.goalMinutes,
+                "default_minutes": body.defaultMinutes,
+            }
+        )
+        return me_payload(conn, user)
 
 
 @app.get("/api/me")

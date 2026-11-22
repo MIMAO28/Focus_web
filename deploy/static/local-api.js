@@ -128,6 +128,10 @@
     return {
       email: user.email,
       username: user.username || "",
+      avatar: user.avatar || "🙂",
+      bio: user.bio || "",
+      goalMinutes: Number(user.goalMinutes) || 0,
+      defaultMinutes: Number(user.defaultMinutes) || 25,
       created_at: user.created_at,
       stats: statsOf(user),
       projects: projectsOf(user),
@@ -154,6 +158,10 @@
       state.users[email] = {
         email,
         username,
+        avatar: "🙂",
+        bio: "",
+        goalMinutes: 0,
+        defaultMinutes: 25,
         salt,
         hash,
         created_at: nowSec(),
@@ -187,6 +195,25 @@
 
     if (path === "/api/me" && method === "GET") {
       need();
+      return me(user);
+    }
+
+    if (path === "/api/profile" && method === "PATCH") {
+      need();
+      const username = String(body.username || "").trim();
+      if (username.length < 2 || username.length > 20) fail("用户名请填 2-20 个字符");
+      const avatar = String(body.avatar || "🙂").slice(0, 4);
+      const bio = String(body.bio || "").slice(0, 80);
+      const goalMinutes = Number(body.goalMinutes) || 0;
+      const defaultMinutes = Number(body.defaultMinutes) || 25;
+      if (goalMinutes < 0 || goalMinutes > 1440) fail("每日目标请填 0-1440 分钟");
+      if (defaultMinutes < 1 || defaultMinutes > 600) fail("默认专注请填 1-600 分钟");
+      user.username = username;
+      user.avatar = avatar;
+      user.bio = bio;
+      user.goalMinutes = goalMinutes;
+      user.defaultMinutes = defaultMinutes;
+      save(state);
       return me(user);
     }
 
