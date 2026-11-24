@@ -261,6 +261,12 @@
         </div>
         <div class="profile-field">
           <span class="profile-label">头像</span>
+          <div class="avatar-controls">
+            <button id="avatarUploadBtn" class="ghost small" type="button">上传照片</button>
+            <button id="avatarRemoveBtn" class="ghost small" type="button" hidden>移除照片</button>
+            <input id="avatarFile" type="file" accept="image/*" hidden>
+          </div>
+          <p class="profile-hint">照片会居中裁成方形，支持 JPG/PNG，建议小于 5MB。</p>
           <div id="avatarPicker" class="avatar-picker"></div>
         </div>
         <label class="profile-field">昵称

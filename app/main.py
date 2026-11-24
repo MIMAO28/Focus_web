@@ -40,6 +40,8 @@ class ProjectIn(BaseModel):
 class ProfileIn(BaseModel):
     username: str
     avatar: str = "🙂"
+    avatarData: str = ""
+    removeAvatar: bool = False
     bio: str = ""
     goalMinutes: int = 0
     defaultMinutes: int = 25
@@ -59,7 +61,7 @@ def current_user(request: Request):
     with closing(db.connect()) as conn:
         row = conn.execute(
             """
-            SELECT u.id, u.email, u.username, u.avatar, u.bio, u.goal_minutes,
+            SELECT u.id, u.email, u.username, u.avatar, u.avatar_url, u.bio, u.goal_minutes,
                    u.default_minutes, u.created_at, s.expires_at
             FROM auth_sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = ?
@@ -77,6 +79,7 @@ def current_user(request: Request):
             "email": row["email"],
             "username": row["username"] or "",
             "avatar": row["avatar"] or "🙂",
+            "avatar_url": row["avatar_url"] or "",
             "bio": row["bio"] or "",
             "goal_minutes": row["goal_minutes"] or 0,
             "default_minutes": row["default_minutes"] or 25,
@@ -90,6 +93,7 @@ def me_payload(conn, user):
         "email": user["email"],
         "username": user.get("username", ""),
         "avatar": user.get("avatar") or "🙂",
+        "avatarUrl": user.get("avatar_url") or "",
         "bio": user.get("bio") or "",
         "goalMinutes": user.get("goal_minutes") or 0,
         "defaultMinutes": user.get("default_minutes") or 25,
@@ -155,6 +159,7 @@ def register(body: Credentials, response: Response):
             "email": email,
             "username": username,
             "avatar": "🙂",
+            "avatar_url": "",
             "bio": "",
             "goal_minutes": 0,
             "default_minutes": 25,
@@ -169,7 +174,7 @@ def login(body: Credentials, response: Response):
     password = body.password or ""
     with closing(db.connect()) as conn:
         row = conn.execute(
-            "SELECT id, email, username, avatar, bio, goal_minutes, default_minutes, password_hash, salt, created_at FROM users WHERE email = ?",
+            "SELECT id, email, username, avatar, avatar_url, bio, goal_minutes, default_minutes, password_hash, salt, created_at FROM users WHERE email = ?",
             (email,),
         ).fetchone()
         if not row or not auth.verify_password(password, row["salt"], row["password_hash"]):
@@ -180,6 +185,7 @@ def login(body: Credentials, response: Response):
             "email": row["email"],
             "username": row["username"] or "",
             "avatar": row["avatar"] or "🙂",
+            "avatar_url": row["avatar_url"] or "",
             "bio": row["bio"] or "",
             "goal_minutes": row["goal_minutes"] or 0,
             "default_minutes": row["default_minutes"] or 25,
@@ -211,16 +217,28 @@ def update_profile(body: ProfileIn, request: Request):
         raise HTTPException(status_code=400, detail="每日目标请填 0-1440 分钟")
     if body.defaultMinutes < 1 or body.defaultMinutes > 600:
         raise HTTPException(status_code=400, detail="默认专注请填 1-600 分钟")
+    avatar_data = (body.avatarData or "").strip()
+    if avatar_data:
+        if not avatar_data.startswith(("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")):
+            raise HTTPException(status_code=400, detail="头像图片格式不支持")
+        if len(avatar_data) > 400000:
+            raise HTTPException(status_code=400, detail="头像图片太大，请重新选择")
+    avatar_url = user["avatar_url"] or ""
+    if avatar_data:
+        avatar_url = avatar_data
+    elif body.removeAvatar:
+        avatar_url = ""
     with closing(db.connect()) as conn:
         conn.execute(
-            "UPDATE users SET username = ?, avatar = ?, bio = ?, goal_minutes = ?, default_minutes = ? WHERE id = ?",
-            (username, avatar, bio, body.goalMinutes, body.defaultMinutes, user["id"]),
+            "UPDATE users SET username = ?, avatar = ?, avatar_url = ?, bio = ?, goal_minutes = ?, default_minutes = ? WHERE id = ?",
+            (username, avatar, avatar_url, bio, body.goalMinutes, body.defaultMinutes, user["id"]),
         )
         conn.commit()
         user.update(
             {
                 "username": username,
                 "avatar": avatar,
+                "avatar_url": avatar_url,
                 "bio": bio,
                 "goal_minutes": body.goalMinutes,
                 "default_minutes": body.defaultMinutes,

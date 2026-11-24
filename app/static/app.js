@@ -9,7 +9,9 @@ let sessions = [];
 let todos = [];
 let currentProjectId = null;
 const AVATARS = ["🙂", "🐱", "🐶", "🦊", "🐼", "🦁", "🐸", "🐧", "🦉", "🐨", "🐯", "🦄"];
-let profile = { username: "", avatar: "🙂", bio: "", goalMinutes: 0, defaultMinutes: 25 };
+let profile = { username: "", avatar: "🙂", avatarUrl: "", bio: "", goalMinutes: 0, defaultMinutes: 25 };
+let pendingAvatar = ""; // 待上传的照片（data URL）
+let removeAvatar = false; // 保存时是否删除已上传的照片
 
 const timer = {
   mode: "countdown",
@@ -381,10 +383,13 @@ function enterApp(me) {
   profile = {
     username: me.username || "",
     avatar: me.avatar || "🙂",
+    avatarUrl: me.avatarUrl || "",
     bio: me.bio || "",
     goalMinutes: Number(me.goalMinutes) || 0,
     defaultMinutes: Number(me.defaultMinutes) || 25,
   };
+  pendingAvatar = "";
+  removeAvatar = false;
   stats = me.stats || stats;
   projects = me.projects || [];
   $("authView").hidden = true;
@@ -405,17 +410,34 @@ function enterApp(me) {
 }
 
 /* ---------------- 个人资料 ---------------- */
+function paintAvatar(el, url, emoji) {
+  if (!el) return;
+  el.textContent = "";
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "头像";
+    el.appendChild(img);
+    el.classList.add("has-photo");
+  } else {
+    el.textContent = emoji || "🙂";
+    el.classList.remove("has-photo");
+  }
+}
+
 function renderUserChip() {
   const name = profile.username || (user && user.email ? user.email.split("@")[0] : "");
-  $("navAvatar").textContent = profile.avatar || "🙂";
+  paintAvatar($("navAvatar"), profile.avatarUrl, profile.avatar);
   $("userEmail").textContent = name;
   $("userEmail").title = user ? user.email : "";
+  window.FocusProfile = { name, avatar: profile.avatar || "🙂", avatarUrl: profile.avatarUrl || "" };
 }
 
 function renderProfile() {
   if (!user) return;
   const name = profile.username || user.email.split("@")[0];
-  $("profileAvatarBig").textContent = profile.avatar || "🙂";
+  paintAvatar($("profileAvatarBig"), profile.avatarUrl, profile.avatar);
+  $("avatarRemoveBtn").hidden = !profile.avatarUrl;
   $("profileNamePreview").textContent = name;
   $("profileEmail").textContent = user.email;
   $("profileEmailText").textContent = user.email;
@@ -433,10 +455,14 @@ function renderProfile() {
   AVATARS.forEach((emoji) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "avatar-option" + (emoji === (profile.avatar || "🙂") ? " active" : "");
+    btn.className =
+      "avatar-option" + (!profile.avatarUrl && emoji === (profile.avatar || "🙂") ? " active" : "");
     btn.textContent = emoji;
     btn.setAttribute("aria-label", `选择头像 ${emoji}`);
     btn.addEventListener("click", () => {
+      if (profile.avatarUrl) removeAvatar = true;
+      pendingAvatar = "";
+      profile.avatarUrl = "";
       profile.avatar = emoji;
       renderProfile();
     });
@@ -444,6 +470,70 @@ function renderProfile() {
   });
   renderUserChip();
 }
+
+/* 读取照片并居中裁成 192×192 的 JPEG（体积小，便于云端与本地保存） */
+function readAvatarFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type)) {
+      reject(new Error("请选择图片文件"));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error("图片不能超过 5MB"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("读取图片失败"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("图片格式无法识别"));
+      img.onload = () => {
+        try {
+          const size = Math.min(img.width, img.height);
+          const sx = Math.floor((img.width - size) / 2);
+          const sy = Math.floor((img.height - size) / 2);
+          const canvas = document.createElement("canvas");
+          canvas.width = 192;
+          canvas.height = 192;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, 192, 192);
+          ctx.drawImage(img, sx, sy, size, size, 0, 0, 192, 192);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        } catch (e) {
+          reject(new Error("图片处理失败，请换一张试试"));
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+$("avatarUploadBtn").addEventListener("click", () => $("avatarFile").click());
+$("avatarFile").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const dataUrl = await readAvatarFile(file);
+    pendingAvatar = dataUrl;
+    removeAvatar = false;
+    profile.avatarUrl = dataUrl;
+    profile.avatar = profile.avatar || "🙂";
+    renderProfile();
+    toast("照片已选好，记得点保存资料");
+  } catch (err) {
+    toast(err.message);
+  }
+});
+$("avatarRemoveBtn").addEventListener("click", () => {
+  pendingAvatar = "";
+  removeAvatar = true;
+  profile.avatarUrl = "";
+  renderProfile();
+  toast("已移除照片，保存后生效");
+});
 
 async function saveProfile() {
   const name = $("profileName").value.trim();
@@ -468,15 +558,26 @@ async function saveProfile() {
   try {
     const data = await api("/api/profile", {
       method: "PATCH",
-      body: JSON.stringify({ username: name, avatar: profile.avatar, bio, goalMinutes, defaultMinutes }),
+      body: JSON.stringify({
+        username: name,
+        avatar: profile.avatar,
+        avatarData: pendingAvatar || undefined,
+        removeAvatar: removeAvatar || undefined,
+        bio,
+        goalMinutes,
+        defaultMinutes,
+      }),
     });
     profile = {
       username: data.username || name,
       avatar: data.avatar || profile.avatar,
+      avatarUrl: data.avatarUrl || "",
       bio: data.bio || "",
       goalMinutes: Number(data.goalMinutes) || 0,
       defaultMinutes: Number(data.defaultMinutes) || 25,
     };
+    pendingAvatar = "";
+    removeAvatar = false;
     if (data.email) user.email = data.email;
     if (data.stats) stats = data.stats;
     renderProfile();

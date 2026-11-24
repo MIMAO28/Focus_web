@@ -18,14 +18,27 @@
     if (typeof window.FocusToast === "function") window.FocusToast(message);
   }
 
+  function profileState() {
+    const p = window.FocusProfile || {};
+    return { name: p.name || "", avatar: p.avatar || "", avatarUrl: p.avatarUrl || "" };
+  }
+
   function nickname() {
+    const p = profileState();
+    if (p.name) return p.name;
     const text = ($("userEmail") && $("userEmail").textContent.trim()) || "";
     return text || "同学";
   }
 
   function avatar() {
+    const p = profileState();
+    if (p.avatar) return p.avatar;
     const text = ($("navAvatar") && $("navAvatar").textContent.trim()) || "";
     return text || "🙂";
+  }
+
+  function avatarUrl() {
+    return profileState().avatarUrl || "";
   }
 
   function projectName() {
@@ -64,6 +77,7 @@
     return {
       name: nickname(),
       avatar: avatar(),
+      avatarUrl: avatarUrl(),
       project: projectName(),
       status: state.running ? "focus" : "rest",
       seconds: state.seconds,
@@ -222,6 +236,7 @@
         key,
         name: item.name || "同学",
         avatar: item.avatar || "🙂",
+        avatarUrl: item.avatarUrl || "",
         project: item.project || "",
         status: item.status === "focus" ? "focus" : "rest",
         seconds: Number(item.seconds) || 0,
@@ -250,7 +265,14 @@
       head.className = "member-head";
       const avatar = document.createElement("span");
       avatar.className = "member-avatar";
-      avatar.textContent = row.avatar;
+      if (row.avatarUrl) {
+        const img = document.createElement("img");
+        img.src = row.avatarUrl;
+        img.alt = "头像";
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = row.avatar;
+      }
       const name = document.createElement("strong");
       name.className = "member-name";
       name.textContent = row.name + (row.key === memberKey ? "（我）" : "");

@@ -129,6 +129,7 @@
       email: user.email,
       username: user.username || "",
       avatar: user.avatar || "🙂",
+      avatarUrl: user.avatarUrl || "",
       bio: user.bio || "",
       goalMinutes: Number(user.goalMinutes) || 0,
       defaultMinutes: Number(user.defaultMinutes) || 25,
@@ -159,6 +160,7 @@
         email,
         username,
         avatar: "🙂",
+        avatarUrl: "",
         bio: "",
         goalMinutes: 0,
         defaultMinutes: 25,
@@ -208,8 +210,15 @@
       const defaultMinutes = Number(body.defaultMinutes) || 25;
       if (goalMinutes < 0 || goalMinutes > 1440) fail("每日目标请填 0-1440 分钟");
       if (defaultMinutes < 1 || defaultMinutes > 600) fail("默认专注请填 1-600 分钟");
+      const avatarData = typeof body.avatarData === "string" ? body.avatarData : "";
+      if (avatarData) {
+        if (!/^data:image\/(jpeg|png|webp);base64,/.test(avatarData)) fail("头像图片格式不支持");
+        if (avatarData.length > 400000) fail("头像图片太大，请重新选择");
+      }
       user.username = username;
       user.avatar = avatar;
+      if (avatarData) user.avatarUrl = avatarData;
+      else if (body.removeAvatar) user.avatarUrl = "";
       user.bio = bio;
       user.goalMinutes = goalMinutes;
       user.defaultMinutes = defaultMinutes;

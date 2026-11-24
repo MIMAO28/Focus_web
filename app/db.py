@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     username TEXT,
     avatar TEXT DEFAULT '🙂',
+    avatar_url TEXT DEFAULT '',
     bio TEXT DEFAULT '',
     goal_minutes INTEGER DEFAULT 0,
     default_minutes INTEGER DEFAULT 25,
@@ -73,6 +74,8 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN username TEXT")
         if "avatar" not in columns:
             conn.execute("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🙂'")
+        if "avatar_url" not in columns:
+            conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT ''")
         if "bio" not in columns:
             conn.execute("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''")
         if "goal_minutes" not in columns:

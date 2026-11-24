@@ -1065,7 +1065,19 @@ body.is-full { overflow: hidden; }
 }
 .profile-field textarea { resize: vertical; }
 .profile-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.avatar-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.profile-hint { margin: 0 0 10px; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .avatar-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.profile-avatar-big img,
+.nav-avatar img,
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.profile-avatar-big { overflow: hidden; }
+.nav-avatar, .member-avatar { overflow: hidden; }
 .avatar-option {
   width: 34px;
   height: 34px;

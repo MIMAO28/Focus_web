@@ -30,6 +30,15 @@
     if (/relation .* does not exist/i.test(text) || /Could not find the table/i.test(text)) {
       return "云端数据表还没创建，请先在 Supabase 运行建表脚本";
     }
+    if (/Bucket not found/i.test(text)) {
+      return "头像存储桶还没创建，请先在 Supabase 运行 deploy/supabase/avatars.sql";
+    }
+    if (/row-level security policy/i.test(text)) {
+      return "没有头像上传权限，请检查 avatars 存储桶策略";
+    }
+    if (/The resource already exists/i.test(text)) {
+      return "头像已存在，请重试";
+    }
     return text || "云端请求失败";
   }
 
@@ -115,6 +124,73 @@
       refresh_token: data.refresh_token,
       user: data.user,
     });
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const parts = String(dataUrl).split(",");
+    const head = parts[0] || "";
+    const base64 = parts[1] || "";
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || "image/jpeg";
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  async function storageRequest(method, path, blob) {
+    let session = loadSession();
+    if (!session || !session.access_token) fail("请先登录", 401);
+    const send = (token) =>
+      fetch(`${URL}/storage/v1/object/${path}`, {
+        method,
+        headers: {
+          apikey: KEY,
+          Authorization: `Bearer ${token}`,
+          "x-upsert": "true",
+          "cache-control": "3600",
+          ...(blob ? { "Content-Type": blob.type || "image/jpeg" } : {}),
+        },
+        body: blob,
+      });
+    let res = await send(session.access_token);
+    if (res.status === 401) {
+      session = await refreshSession();
+      if (!session) {
+        saveSession(null);
+        fail("登录已过期，请重新登录", 401);
+      }
+      res = await send(session.access_token);
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        data = null;
+      }
+      const message = (data && (data.message || data.error)) || `请求失败（${res.status}）`;
+      fail(mapMessage(message), res.status);
+    }
+    return res;
+  }
+
+  async function uploadAvatar(dataUrl) {
+    const user = currentUser();
+    if (!user) fail("请先登录", 401);
+    await storageRequest("POST", `avatars/${user.id}/avatar.jpg`, dataUrlToBlob(dataUrl));
+    // 加时间戳避免浏览器缓存旧照片
+    return `${URL}/storage/v1/object/public/avatars/${user.id}/avatar.jpg?v=${Date.now()}`;
+  }
+
+  async function deleteAvatar() {
+    const user = currentUser();
+    if (!user) return;
+    try {
+      await storageRequest("DELETE", `avatars/${user.id}/avatar.jpg`);
+    } catch (e) {
+      if (!/not found|不存在/i.test(e.message || "")) throw e;
+    }
   }
 
   async function fetchAll() {
@@ -205,6 +281,7 @@
       email: user.email,
       username: meta.username || "",
       avatar: meta.avatar || "🙂",
+      avatarUrl: meta.avatar_url || "",
       bio: meta.bio || "",
       goalMinutes: Number(meta.goal_minutes) || 0,
       defaultMinutes: Number(meta.default_minutes) || 25,
@@ -282,12 +359,25 @@
       if (username.length < 2 || username.length > 20) fail("用户名请填 2-20 个字符");
       if (goalMinutes < 0 || goalMinutes > 1440) fail("每日目标请填 0-1440 分钟");
       if (defaultMinutes < 1 || defaultMinutes > 600) fail("默认专注请填 1-600 分钟");
+      const avatarData = typeof body.avatarData === "string" ? body.avatarData : "";
+      if (avatarData) {
+        if (!/^data:image\/(jpeg|png|webp);base64,/.test(avatarData)) fail("头像图片格式不支持");
+        if (avatarData.length > 400000) fail("头像图片太大，请重新选择");
+      }
+      const meta = (currentUser() && currentUser().user_metadata) || {};
+      let avatarUrl = meta.avatar_url || "";
+      if (avatarData) avatarUrl = await uploadAvatar(avatarData);
+      else if (body.removeAvatar) {
+        await deleteAvatar();
+        avatarUrl = "";
+      }
       const updated = await authed("/auth/v1/user", {
         method: "PUT",
         body: {
           data: {
             username,
             avatar,
+            avatar_url: avatarUrl,
             bio,
             goal_minutes: goalMinutes,
             default_minutes: defaultMinutes,
