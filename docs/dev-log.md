@@ -830,3 +830,33 @@ Pages 部署 success，线上含 view-room、room.js。
 - `ea0b128` P41 自习室显示项目与个人资料页
 
 首次部署 deploy-pages 步骤失败（构建与上传成功），由日志提交触发重跑。
+
+## P42 头像照片上传
+
+**需求**
+
+个人资料页的头像支持自己上传照片，用自己的照片当头像。
+
+**实现**
+
+1. 资料页头像区新增“上传照片 / 移除照片”，保留 12 个 emoji 作为回退。
+2. 前端用 canvas 居中裁成 192×192 的 JPEG（质量 0.85），限制原图 ≤5MB，选完先本地预览。
+3. 预览同步到资料页大图、右上角导航头像与自习室成员卡片；自习室 presence 增加 avatarUrl。
+4. 三套后端同步：本地 localStorage 直接存 data URL；FastAPI 新增 users.avatar_url 与 PATCH 处理；云端上传 Supabase Storage `avatars/<uid>/avatar.jpg`，user_metadata 存 avatar_url。
+5. 新增 `deploy/supabase/avatars.sql`：创建公开桶 avatars 与读/写/改/删策略，写入路径限制为本人 uid。
+6. 未创建桶时给出明确提示，emoji 头像仍可用。
+
+**验证（Edge，本地模式 + 真实 Realtime）**
+
+- 注册后资料页默认 🙂；选择 300×200 测试图后预览为 `data:image/jpeg;base64,`，移除按钮出现。
+- 保存后右上角显示照片；刷新后仍保持。
+- 创建自习室后成员卡片显示照片头像。
+- 移除照片并保存后，右上角恢复 🙂，预览清空。
+- 390 宽 scrollWidth=375 无横向溢出；控制台错误 0 条。
+- FastAPI TestClient：注册 avatarUrl 为空；PATCH 写入后 me 返回一致；removeAvatar 清空；非图片 data URL 返回 400“头像图片格式不支持”。
+
+**提交**
+
+- `451a8d7` P42 支持上传照片作为头像
+
+云端上传依赖先在 Supabase SQL Editor 执行 `deploy/supabase/avatars.sql`；未执行时上传会提示建桶，emoji 回退不受影响。
