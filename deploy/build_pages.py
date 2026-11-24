@@ -55,6 +55,9 @@ def main():
     shutil.copy(os.path.join(SRC, "theme.js"), os.path.join(OUT, "theme.js"))
     shutil.copy(os.path.join(SRC, "app.js"), os.path.join(OUT, "app.js"))
     shutil.copy(os.path.join(SRC, "room.js"), os.path.join(OUT, "room.js"))
+    audio_src = os.path.join(SRC, "audio")
+    if os.path.isdir(audio_src):
+        shutil.copytree(audio_src, os.path.join(OUT, "audio"))
     open(os.path.join(OUT, ".nojekyll"), "w", encoding="utf-8").write("")
 
     print("built site/ (%s): %s" % ("cloud" if cloud else "local", ", ".join(sorted(os.listdir(OUT)))))

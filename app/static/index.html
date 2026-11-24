@@ -63,6 +63,7 @@
       <a class="logo" href="#timer">FOCUS<span>!</span></a>
       <nav class="nav" aria-label="页面切换">
         <a href="#timer" class="active" aria-current="page">计时</a>
+        <a href="#sound">声音</a>
         <a href="#todo">待办</a>
         <a href="#room">自习室</a>
         <a href="#stats">统计</a>
@@ -179,6 +180,47 @@
       <div class="step"><span class="step-no">01</span><h3>建一个项目</h3><p>听力、阅读、背单词，各自累计，互不打扰。</p></div>
       <div class="step"><span class="step-no">02</span><h3>按下开始</h3><p>倒计时 25 分钟，或正计时自由专注。</p></div>
       <div class="step"><span class="step-no">03</span><h3>自动入账</h3><p>结束即保存，今天、本周、累计都能看到。</p></div>
+    </div>
+  </section>
+  </div>
+
+  <div id="view-sound" class="view" hidden>
+  <section class="panel sound-panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">SOUNDSCAPE</span>
+        <h2>学习环境音</h2>
+      </div>
+      <div class="sound-master-actions">
+        <button id="soundPlayAll" class="btn-primary small" type="button">全部播放</button>
+        <button id="soundStopAll" class="btn-dark small" type="button">全部暂停</button>
+      </div>
+    </div>
+    <p class="sound-intro">雨声、咖啡馆、图书馆……自由叠加，调出属于你的专注背景。正在播放 <strong id="soundPlayingCount">0</strong> 个声音。</p>
+
+    <div class="sound-presets-head">
+      <h3>环境预设</h3>
+      <span class="sound-hint-inline">点一下就切换整套混音</span>
+    </div>
+    <div id="soundPresets" class="sound-preset-grid"></div>
+
+    <div class="sound-mixer">
+      <div class="sound-master-bar">
+        <span class="sound-master-label">总音量</span>
+        <input id="soundMaster" type="range" min="0" max="100" step="1" value="100" aria-label="环境音总音量">
+        <strong id="soundMasterValue">100%</strong>
+        <label class="sound-check"><input id="soundAutoplay" type="checkbox"> 计时开始时自动播放</label>
+      </div>
+      <div id="soundGroups" class="sound-groups"></div>
+    </div>
+
+    <div class="sound-save">
+      <h3>保存当前混音</h3>
+      <div class="sound-save-row">
+        <input id="soundPresetName" maxlength="12" placeholder="给这套环境起个名字，例如：雨夜冲刺">
+        <button id="soundPresetSave" class="btn-primary small" type="button">保存为预设</button>
+      </div>
+      <p class="sound-hint">预设保存在当前浏览器；清除浏览器数据后会丢失。所有音源来自 <a href="https://freesound.org" target="_blank" rel="noopener">Freesound</a>，均为 CC0 许可。</p>
     </div>
   </section>
   </div>
@@ -427,6 +469,7 @@
   </div>
 </div>
 
+<script>window.FOCUS_AUDIO_BASE = "/static/audio/";</script>
 <script src="/static/theme.js"></script>
 <script src="/static/app.js"></script>
 <script type="module" src="/static/room.js"></script>

@@ -173,7 +173,7 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "todo", "room", "stats", "profile"];
+const VIEWS = ["timer", "sound", "todo", "room", "stats", "profile"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
@@ -1899,11 +1899,551 @@ function pickQuote() {
   }
 }
 
+/* ---------------- 学习环境音 ---------------- */
+const AUDIO_BASE = window.FOCUS_AUDIO_BASE || "/static/audio/";
+const SOUNDS = [
+  { id: "rain-indoor", name: "室内雨声", layer: "底噪", file: "rain-indoor.mp3", meta: "13:52 · 雨声" },
+  { id: "rain-thunder", name: "远处雷雨", layer: "场景", file: "rain-thunder.mp3", meta: "2:04 · 雷雨" },
+  { id: "cafe-murmur", name: "咖啡馆人声", layer: "场景", file: "cafe-murmur.mp3", meta: "2:17 · 人声" },
+  { id: "cafe-cups", name: "咖啡馆杯碟", layer: "场景", file: "cafe-cups.mp3", meta: "1:57 · 杯碟" },
+  { id: "library-chatter", name: "图书馆人声", layer: "场景", file: "library-chatter.mp3", meta: "2:09 · 低语" },
+  { id: "library-roomtone", name: "图书馆底噪", layer: "底噪", file: "library-roomtone.mp3", meta: "0:11 · 空间" },
+  { id: "fireplace", name: "壁炉柴火", layer: "场景", file: "fireplace.mp3", meta: "1:49 · 柴火" },
+  { id: "keyboard", name: "机械键盘", layer: "细节", file: "keyboard.mp3", meta: "0:31 · 键盘" },
+  { id: "forest-birds", name: "森林鸟鸣", layer: "底噪", file: "forest-birds.mp3", meta: "5:28 · 森林" },
+  { id: "ocean-waves", name: "海浪", layer: "底噪", file: "ocean-waves.mp3", meta: "2:19 · 海浪" },
+  { id: "stream", name: "溪流", layer: "细节", file: "stream.mp3", meta: "0:34 · 水流" },
+  { id: "wind", name: "风声", layer: "细节", file: "wind.mp3", meta: "0:19 · 微风" },
+  { id: "train-interior", name: "火车站内", layer: "场景", file: "train-interior.mp3", meta: "0:49 · 车站" },
+  { id: "crickets", name: "夏夜虫鸣", layer: "细节", file: "crickets.mp3", meta: "0:10 · 虫鸣" },
+  { id: "page-turn", name: "翻书页", layer: "细节", file: "page-turn.mp3", meta: "0:27 · 纸张" },
+];
+const SOUND_LAYERS = [
+  { key: "底噪", desc: "持续铺底，撑起整个空间" },
+  { key: "场景", desc: "把耳朵带到某个地方" },
+  { key: "细节", desc: "少量点缀，增加真实感" },
+];
+const SOUND_PRESETS = [
+  {
+    id: "rain-cafe",
+    name: "雨天咖啡馆",
+    mix: { "rain-indoor": 55, "cafe-murmur": 40, "cafe-cups": 20, "rain-thunder": 15 },
+  },
+  {
+    id: "night-library",
+    name: "深夜图书馆",
+    mix: { "library-chatter": 45, "library-roomtone": 25, keyboard: 20, "page-turn": 15 },
+  },
+  {
+    id: "forest-study",
+    name: "森林自习",
+    mix: { "forest-birds": 55, stream: 35, wind: 20 },
+  },
+  {
+    id: "fireplace-read",
+    name: "壁炉夜读",
+    mix: { fireplace: 60, "rain-indoor": 25, "page-turn": 15 },
+  },
+  {
+    id: "seaside",
+    name: "海边放空",
+    mix: { "ocean-waves": 60, wind: 30, crickets: 10 },
+  },
+];
+const SOUND_MAP = SOUNDS.reduce((map, s) => {
+  map[s.id] = s;
+  return map;
+}, {});
+const SOUND_KEYS = {
+  mix: "focus.sound.mix.v1",
+  custom: "focus.sound.custom.v1",
+};
+
+const soundAudios = {};
+let soundBuilt = false;
+let soundSaveTimer = null;
+let soundLastRunning = false;
+let soundBlockedWarned = false;
+let soundState = {
+  mix: { ...SOUND_PRESETS[0].mix },
+  master: 100,
+  autoplay: false,
+  presetId: SOUND_PRESETS[0].id,
+  custom: [],
+};
+
+function clampPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+function sanitizeSoundMix(raw) {
+  const mix = {};
+  if (!raw || typeof raw !== "object") return mix;
+  SOUNDS.forEach((s) => {
+    const value = clampPercent(raw[s.id]);
+    if (value > 0) mix[s.id] = value;
+  });
+  return mix;
+}
+
+function loadSoundState() {
+  let hasStoredMix = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(SOUND_KEYS.mix) || "null");
+    if (saved && typeof saved === "object") {
+      if (saved.mix && typeof saved.mix === "object") {
+        soundState.mix = sanitizeSoundMix(saved.mix);
+        hasStoredMix = true;
+      }
+      if (Number.isFinite(Number(saved.master))) soundState.master = clampPercent(saved.master);
+      soundState.autoplay = !!saved.autoplay;
+      soundState.presetId = typeof saved.presetId === "string" ? saved.presetId : "";
+    }
+    const custom = JSON.parse(localStorage.getItem(SOUND_KEYS.custom) || "[]");
+    if (Array.isArray(custom)) {
+      soundState.custom = custom
+        .filter((p) => p && typeof p.id === "string" && typeof p.name === "string" && p.mix)
+        .map((p) => ({
+          id: p.id,
+          name: String(p.name).slice(0, 12),
+          mix: sanitizeSoundMix(p.mix),
+        }));
+    }
+  } catch (e) {
+    /* 隐私模式下忽略 */
+  }
+  if (!hasStoredMix) soundState.mix = { ...SOUND_PRESETS[0].mix };
+}
+
+function persistSoundState() {
+  try {
+    localStorage.setItem(
+      SOUND_KEYS.mix,
+      JSON.stringify({
+        mix: soundState.mix,
+        master: soundState.master,
+        autoplay: soundState.autoplay,
+        presetId: soundState.presetId,
+      })
+    );
+    localStorage.setItem(SOUND_KEYS.custom, JSON.stringify(soundState.custom));
+  } catch (e) {
+    /* 忽略容量不足 */
+  }
+}
+
+function scheduleSoundSave() {
+  if (soundSaveTimer) clearTimeout(soundSaveTimer);
+  soundSaveTimer = setTimeout(() => {
+    soundSaveTimer = null;
+    persistSoundState();
+  }, 250);
+}
+
+function soundTargetVolume(id) {
+  return ((soundState.mix[id] || 0) / 100) * (soundState.master / 100);
+}
+
+function clearSoundFade(audio) {
+  if (audio._fade) {
+    clearInterval(audio._fade);
+    audio._fade = null;
+  }
+}
+
+function fadeSound(audio, target, ms, done) {
+  clearSoundFade(audio);
+  const start = audio.volume;
+  const diff = target - start;
+  if (Math.abs(diff) < 0.01) {
+    audio.volume = target;
+    if (done) done();
+    return;
+  }
+  const steps = Math.max(1, Math.round(ms / 40));
+  let i = 0;
+  audio._fade = setInterval(() => {
+    i += 1;
+    audio.volume = Math.min(1, Math.max(0, start + (diff * i) / steps));
+    if (i >= steps) {
+      clearSoundFade(audio);
+      audio.volume = Math.min(1, Math.max(0, target));
+      if (done) done();
+    }
+  }, 40);
+}
+
+function ensureSoundAudio(id) {
+  if (soundAudios[id]) return soundAudios[id];
+  const sound = SOUND_MAP[id];
+  if (!sound) return null;
+  const audio = new Audio();
+  audio.src = AUDIO_BASE + sound.file;
+  audio.loop = true;
+  audio.preload = "none";
+  audio.volume = 0;
+  audio.addEventListener("play", syncSoundUI);
+  audio.addEventListener("pause", syncSoundUI);
+  audio.addEventListener("playing", () => {
+    soundBlockedWarned = false;
+  });
+  audio.addEventListener("error", () => toast(`「${sound.name}」加载失败，请检查网络`));
+  soundAudios[id] = audio;
+  return audio;
+}
+
+function playSound(id, options = {}) {
+  const audio = ensureSoundAudio(id);
+  if (!audio) return;
+  const target = soundTargetVolume(id);
+  if (target <= 0) return;
+  if (audio.paused) {
+    audio.volume = 0;
+    const started = audio.play();
+    if (started && typeof started.catch === "function") {
+      started.catch(() => {
+        clearSoundFade(audio);
+        if (!soundBlockedWarned) {
+          soundBlockedWarned = true;
+          toast("浏览器拦截了自动播放，点一下播放按钮再试");
+        }
+      });
+    }
+    fadeSound(audio, target, options.fade || 500);
+  } else {
+    fadeSound(audio, target, 220);
+  }
+}
+
+function pauseSound(id, options = {}) {
+  const audio = soundAudios[id];
+  if (!audio) return;
+  if (audio.paused) {
+    audio.volume = 0;
+    syncSoundUI();
+    return;
+  }
+  fadeSound(audio, 0, options.fade || 300, () => audio.pause());
+}
+
+function soundIsPlaying(id) {
+  const audio = soundAudios[id];
+  return !!audio && !audio.paused;
+}
+
+function soundPresetSummary(mix) {
+  const parts = Object.keys(mix)
+    .filter((id) => mix[id] > 0 && SOUND_MAP[id])
+    .sort((a, b) => mix[b] - mix[a])
+    .map((id) => SOUND_MAP[id].name);
+  if (!parts.length) return "空混音";
+  return parts.slice(0, 4).join(" · ") + (parts.length > 4 ? ` 等 ${parts.length} 个` : "");
+}
+
+function buildSoundGroups() {
+  const box = $("soundGroups");
+  box.textContent = "";
+  SOUND_LAYERS.forEach((layer) => {
+    const group = document.createElement("div");
+    group.className = "sound-group";
+
+    const head = document.createElement("div");
+    head.className = "sound-group-head";
+    const tag = document.createElement("span");
+    tag.className = "sound-layer";
+    tag.textContent = layer.key;
+    const desc = document.createElement("span");
+    desc.className = "sound-group-desc";
+    desc.textContent = layer.desc;
+    head.append(tag, desc);
+    group.appendChild(head);
+
+    SOUNDS.filter((s) => s.layer === layer.key).forEach((sound) => {
+      const row = document.createElement("div");
+      row.className = "sound-row";
+      row.dataset.id = sound.id;
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "sound-toggle";
+      toggle.textContent = "▶";
+      toggle.setAttribute("aria-label", `播放或暂停 ${sound.name}`);
+      toggle.setAttribute("aria-pressed", "false");
+      toggle.addEventListener("click", () => {
+        if (soundIsPlaying(sound.id)) {
+          pauseSound(sound.id);
+          return;
+        }
+        if (!soundState.mix[sound.id]) soundState.mix[sound.id] = 40;
+        playSound(sound.id);
+        scheduleSoundSave();
+        syncSoundUI();
+      });
+
+      const name = document.createElement("div");
+      name.className = "sound-name";
+      name.textContent = sound.name;
+      const meta = document.createElement("small");
+      meta.textContent = sound.meta;
+      name.appendChild(meta);
+
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = "0";
+      range.max = "100";
+      range.step = "1";
+      range.value = String(soundState.mix[sound.id] || 0);
+      range.setAttribute("aria-label", `${sound.name} 音量`);
+      range.addEventListener("input", () => {
+        const value = clampPercent(range.value);
+        soundState.mix[sound.id] = value;
+        soundState.presetId = "";
+        if (value > 0) playSound(sound.id);
+        else pauseSound(sound.id);
+        scheduleSoundSave();
+        syncSoundUI();
+        markActiveSoundPreset();
+      });
+
+      const vol = document.createElement("strong");
+      vol.className = "sound-vol";
+      vol.textContent = `${soundState.mix[sound.id] || 0}%`;
+
+      row.append(toggle, name, range, vol);
+      group.appendChild(row);
+    });
+    box.appendChild(group);
+  });
+}
+
+function renderSoundPresets() {
+  const box = $("soundPresets");
+  if (!box) return;
+  box.textContent = "";
+  const items = [
+    ...SOUND_PRESETS.map((p) => ({ ...p, custom: false })),
+    ...soundState.custom.map((p) => ({ ...p, custom: true })),
+  ];
+  items.forEach((preset) => {
+    const card = document.createElement("article");
+    card.className = "sound-preset-card";
+    card.dataset.id = preset.id;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `使用预设 ${preset.name}`);
+
+    const top = document.createElement("div");
+    top.className = "sound-preset-top";
+    const title = document.createElement("span");
+    title.className = "sound-preset-name";
+    title.textContent = preset.name;
+    const tag = document.createElement("span");
+    tag.className = "sound-preset-tag";
+    tag.textContent = preset.custom ? "我的" : "内置";
+    top.append(title, tag);
+
+    const summary = document.createElement("p");
+    summary.className = "sound-preset-mix";
+    summary.textContent = soundPresetSummary(preset.mix);
+
+    const actions = document.createElement("div");
+    actions.className = "sound-preset-actions";
+    const use = document.createElement("button");
+    use.type = "button";
+    use.className = "ghost small";
+    use.textContent = "使用";
+    use.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applySoundPreset(preset);
+    });
+    actions.appendChild(use);
+    if (preset.custom) {
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "ghost small sound-preset-del";
+      del.textContent = "删除";
+      del.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteSoundPreset(preset.id);
+      });
+      actions.appendChild(del);
+    }
+
+    card.append(top, summary, actions);
+    card.addEventListener("click", () => applySoundPreset(preset));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        applySoundPreset(preset);
+      }
+    });
+    box.appendChild(card);
+  });
+  markActiveSoundPreset();
+}
+
+function markActiveSoundPreset() {
+  document.querySelectorAll(".sound-preset-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.id === soundState.presetId);
+  });
+}
+
+function applySoundPreset(preset, options = {}) {
+  soundState.mix = { ...preset.mix };
+  soundState.presetId = preset.id;
+  SOUNDS.forEach((sound) => {
+    if (soundState.mix[sound.id] > 0) playSound(sound.id, { fade: 700 });
+    else pauseSound(sound.id, { fade: 250 });
+  });
+  scheduleSoundSave();
+  syncSoundUI();
+  markActiveSoundPreset();
+  if (options.toast !== false) toast(`已切换：${preset.name}`);
+}
+
+function deleteSoundPreset(id) {
+  soundState.custom = soundState.custom.filter((p) => p.id !== id);
+  if (soundState.presetId === id) soundState.presetId = "";
+  persistSoundState();
+  renderSoundPresets();
+  syncSoundUI();
+  toast("已删除预设");
+}
+
+function syncSoundUI() {
+  if (!soundBuilt) return;
+  document.querySelectorAll(".sound-row").forEach((row) => {
+    const id = row.dataset.id;
+    const playing = soundIsPlaying(id);
+    const toggle = row.querySelector(".sound-toggle");
+    if (toggle) {
+      toggle.classList.toggle("playing", playing);
+      toggle.textContent = playing ? "❚❚" : "▶";
+      toggle.setAttribute("aria-pressed", playing ? "true" : "false");
+    }
+    const range = row.querySelector('input[type="range"]');
+    if (range && document.activeElement !== range) {
+      range.value = String(soundState.mix[id] || 0);
+    }
+    const vol = row.querySelector(".sound-vol");
+    if (vol) vol.textContent = `${soundState.mix[id] || 0}%`;
+  });
+  const count = Object.keys(soundAudios).filter((id) => soundIsPlaying(id)).length;
+  if ($("soundPlayingCount")) $("soundPlayingCount").textContent = String(count);
+  if ($("soundMaster")) $("soundMaster").value = String(soundState.master);
+  if ($("soundMasterValue")) $("soundMasterValue").textContent = `${soundState.master}%`;
+  if ($("soundAutoplay")) $("soundAutoplay").checked = soundState.autoplay;
+}
+
+function bindSoundControls() {
+  $("soundPlayAll").addEventListener("click", () => {
+    const hasVolume = SOUNDS.some((s) => (soundState.mix[s.id] || 0) > 0);
+    if (!hasVolume) {
+      applySoundPreset(SOUND_PRESETS[0]);
+      return;
+    }
+    SOUNDS.forEach((sound) => {
+      if ((soundState.mix[sound.id] || 0) > 0) playSound(sound.id, { fade: 600 });
+    });
+    syncSoundUI();
+    toast("开始播放环境音");
+  });
+
+  $("soundStopAll").addEventListener("click", () => {
+    SOUNDS.forEach((sound) => pauseSound(sound.id));
+    syncSoundUI();
+    toast("已暂停环境音");
+  });
+
+  $("soundMaster").addEventListener("input", (e) => {
+    soundState.master = clampPercent(e.target.value);
+    SOUNDS.forEach((sound) => {
+      const audio = soundAudios[sound.id];
+      if (!audio) return;
+      clearSoundFade(audio);
+      audio.volume = soundTargetVolume(sound.id);
+    });
+    syncSoundUI();
+    scheduleSoundSave();
+  });
+
+  $("soundAutoplay").addEventListener("change", (e) => {
+    soundState.autoplay = !!e.target.checked;
+    scheduleSoundSave();
+    toast(soundState.autoplay ? "计时开始时会自动播放当前混音" : "已关闭计时自动播放");
+  });
+
+  $("soundPresetSave").addEventListener("click", () => {
+    const input = $("soundPresetName");
+    const name = input.value.trim().slice(0, 12);
+    const mix = {};
+    SOUNDS.forEach((sound) => {
+      if ((soundState.mix[sound.id] || 0) > 0) mix[sound.id] = soundState.mix[sound.id];
+    });
+    if (!name) {
+      toast("先给这套环境起个名字");
+      input.focus();
+      return;
+    }
+    if (!Object.keys(mix).length) {
+      toast("先把至少一个声音的音量调高");
+      return;
+    }
+    const existing = soundState.custom.find((p) => p.name === name);
+    if (existing) {
+      existing.mix = { ...mix };
+      soundState.presetId = existing.id;
+      toast(`已更新预设：${name}`);
+    } else {
+      const id = `custom-${Date.now()}`;
+      soundState.custom.push({ id, name, mix });
+      soundState.presetId = id;
+      toast(`已保存预设：${name}`);
+    }
+    input.value = "";
+    persistSoundState();
+    renderSoundPresets();
+    markActiveSoundPreset();
+  });
+
+  window.addEventListener("focus-timer", () => {
+    const running = !!(window.FocusTimerState && window.FocusTimerState.running);
+    if (running && !soundLastRunning && soundState.autoplay) {
+      const hasVolume = SOUNDS.some((s) => (soundState.mix[s.id] || 0) > 0);
+      if (hasVolume) {
+        SOUNDS.forEach((sound) => {
+          if ((soundState.mix[sound.id] || 0) > 0) playSound(sound.id, { fade: 900 });
+        });
+        syncSoundUI();
+      }
+    }
+    soundLastRunning = running;
+  });
+
+  window.addEventListener("focus-logout", () => {
+    SOUNDS.forEach((sound) => pauseSound(sound.id, { fade: 120 }));
+  });
+}
+
+function initSound() {
+  if (soundBuilt || !$("soundGroups")) return;
+  soundBuilt = true;
+  loadSoundState();
+  buildSoundGroups();
+  renderSoundPresets();
+  bindSoundControls();
+  syncSoundUI();
+  soundLastRunning = !!(window.FocusTimerState && window.FocusTimerState.running);
+}
+
 /* ---------------- 启动 ---------------- */
 (async function boot() {
   setAuthMode("login");
   pickQuote();
   renderTimer();
+  initSound();
   if (window.FocusCloudReady) {
     try {
       await window.FocusCloudReady;
