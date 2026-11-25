@@ -173,7 +173,7 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "sound", "todo", "room", "stats", "profile"];
+const VIEWS = ["timer", "sound", "todo", "room", "stats", "profile", "feedback"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
@@ -2556,6 +2556,177 @@ function initSound() {
   syncSoundUI();
   soundLastRunning = !!(window.FocusTimerState && window.FocusTimerState.running);
 }
+
+/* ---------------- 意见反馈 ---------------- */
+const FEEDBACK_EMAIL = "maom68758@gmail.com";
+const FEEDBACK_ENDPOINT = `https://formsubmit.co/ajax/${encodeURIComponent(FEEDBACK_EMAIL)}`;
+const FEEDBACK_LABELS = {
+  timer: "计时",
+  sound: "环境音",
+  todo: "待办",
+  room: "自习室",
+  stats: "统计",
+  profile: "我的",
+  feedback: "网站",
+};
+
+let feedbackType = "功能建议";
+let feedbackFromView = "timer";
+let feedbackSending = false;
+
+function setFeedbackType(type) {
+  feedbackType = type;
+  document.querySelectorAll("#feedbackType button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.type === type);
+  });
+}
+
+function feedbackMailto() {
+  const text = $("feedbackText").value.trim();
+  const contact = $("feedbackContact").value.trim();
+  const page = $("feedbackPage").value || "网站";
+  const body = [
+    `类型：${feedbackType}`,
+    `页面：${page}`,
+    `内容：${text}`,
+    `联系方式：${contact || "未填写"}`,
+  ].join("\n");
+  return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(`FOCUS! ${feedbackType}`)}&body=${encodeURIComponent(body)}`;
+}
+
+function setFeedbackStatus(message) {
+  const box = $("feedbackStatus");
+  box.hidden = false;
+  box.textContent = "";
+  const text = document.createElement("span");
+  text.textContent = message;
+  const link = document.createElement("a");
+  link.href = feedbackMailto();
+  link.textContent = "直接发邮件";
+  box.append(text, link);
+}
+
+function prepareFeedback() {
+  $("feedbackForm").hidden = false;
+  $("feedbackDone").hidden = true;
+  $("feedbackStatus").hidden = true;
+  $("feedbackPage").value = FEEDBACK_LABELS[feedbackFromView] || "网站";
+}
+
+function openFeedback() {
+  const current = currentView();
+  feedbackFromView = current === "feedback" ? "timer" : current;
+  $("feedbackText").value = "";
+  $("feedbackContact").value = "";
+  $("feedbackHoney").value = "";
+  $("feedbackCount").textContent = "0 / 1000";
+  setFeedbackType("功能建议");
+  prepareFeedback();
+  location.hash = "feedback";
+  setTimeout(() => $("feedbackText").focus(), 0);
+}
+
+function leaveFeedback() {
+  location.hash = feedbackFromView || "timer";
+}
+
+function showFeedbackDone() {
+  feedbackSending = false;
+  $("feedbackSubmit").disabled = false;
+  $("feedbackSubmit").textContent = "发送反馈";
+  $("feedbackForm").hidden = true;
+  $("feedbackDone").hidden = false;
+  toast("反馈已发送，谢谢！");
+}
+
+function showFeedbackError(message) {
+  feedbackSending = false;
+  $("feedbackSubmit").disabled = false;
+  $("feedbackSubmit").textContent = "发送反馈";
+  setFeedbackStatus(message);
+}
+
+async function submitFeedback(e) {
+  e.preventDefault();
+  if (feedbackSending) return;
+  const text = $("feedbackText").value.trim();
+  if (text.length < 5) {
+    toast("再多写几句吧，至少 5 个字");
+    $("feedbackText").focus();
+    return;
+  }
+  if ($("feedbackHoney").value) {
+    showFeedbackDone();
+    return;
+  }
+  let last = 0;
+  try {
+    last = Number(localStorage.getItem("focus.feedback.last")) || 0;
+  } catch (err) {
+    last = 0;
+  }
+  if (Date.now() - last < 30000) {
+    toast("刚提交过，稍等半分钟再试");
+    return;
+  }
+  const contact = $("feedbackContact").value.trim();
+  const page = $("feedbackPage").value || "网站";
+  feedbackSending = true;
+  $("feedbackSubmit").disabled = true;
+  $("feedbackSubmit").textContent = "发送中…";
+  $("feedbackStatus").hidden = true;
+  try {
+    const res = await fetch(FEEDBACK_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `FOCUS! ${feedbackType}`,
+        _template: "table",
+        _captcha: "false",
+        类型: feedbackType,
+        内容: text,
+        联系方式: contact || "未填写",
+        页面: page,
+        提交时间: new Date().toLocaleString("zh-CN"),
+      }),
+    });
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (err) {
+      data = null;
+    }
+    const ok = data && (data.success === true || data.success === "true");
+    if (res.ok && ok) {
+      try {
+        localStorage.setItem("focus.feedback.last", String(Date.now()));
+      } catch (err) {
+        /* 隐私模式忽略 */
+      }
+      showFeedbackDone();
+      return;
+    }
+    const raw = (data && (data.message || data.error)) || `发送失败（${res.status}）`;
+    if (/activat|confirm|激活|确认/i.test(raw)) {
+      showFeedbackError("反馈通道还在激活中，激活邮件已发到站长邮箱；你也可以");
+    } else {
+      showFeedbackError(`发送没有成功：${raw}；你也可以`);
+    }
+  } catch (err) {
+    showFeedbackError("网络连接失败，你也可以");
+  }
+}
+
+$("feedbackOpen").addEventListener("click", openFeedback);
+$("feedbackBack").addEventListener("click", leaveFeedback);
+$("feedbackDoneBack").addEventListener("click", leaveFeedback);
+$("feedbackForm").addEventListener("submit", submitFeedback);
+document.querySelectorAll("#feedbackType button").forEach((btn) => {
+  btn.addEventListener("click", () => setFeedbackType(btn.dataset.type));
+});
+$("feedbackText").addEventListener("input", () => {
+  $("feedbackCount").textContent = `${$("feedbackText").value.length} / 1000`;
+});
 
 /* ---------------- 启动 ---------------- */
 (async function boot() {
