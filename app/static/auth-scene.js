@@ -14,7 +14,10 @@
   const conn = navigator.connection || null;
   const saveData = !!(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || "")));
   const scriptSrc = document.currentScript ? document.currentScript.src : location.href;
-  const DPR_CAP = 1; // 扁平插画 1x 足够，减少每帧填充
+  const DPR_MAX = 2; // 高分屏最多按 2x 渲染，保证清晰度
+  function dprCap() {
+    return Math.min(window.devicePixelRatio || 1, DPR_MAX);
+  }
   const TRACK_GAP = 130; // 跟踪触发间隔
   const FLIGHT_MS = 620; // 爱心飞行时长
   const MAX_FLIGHTS = 3; // 同时飞行的爱心上限
@@ -69,14 +72,14 @@
         }),
         onLoad: () => {
           try {
-            instance.resizeDrawingSurfaceToCanvas(DPR_CAP);
+            instance.resizeDrawingSurfaceToCanvas(dprCap());
             inputs = instance.stateMachineInputs("SM BFL Main") || [];
             loaded = true;
             scene.classList.add("is-live");
             setHint("点击左侧画面投一颗赞");
             if (resizeObserver) resizeObserver.disconnect();
             resizeObserver = new ResizeObserver(() => {
-              if (instance) instance.resizeDrawingSurfaceToCanvas(DPR_CAP);
+              if (instance) instance.resizeDrawingSurfaceToCanvas(dprCap());
             });
             resizeObserver.observe(scene);
             if (!active || document.hidden) instance.pause();
@@ -320,7 +323,7 @@
         active,
         reduced: reduceMotion,
         saveData,
-        dpr: DPR_CAP,
+        dpr: dprCap(),
         tosses,
         landed,
         tracks,
