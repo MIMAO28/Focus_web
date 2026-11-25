@@ -1471,6 +1471,7 @@ body.is-full { overflow: hidden; }
 
 /* ---------- 页脚 ---------- */
 .foot {
+  position: relative;
   margin-top: 40px;
   background: var(--foot-bg);
   color: var(--foot-fg);
@@ -2014,19 +2015,33 @@ body.is-full { overflow: hidden; }
 }
 
 /* ---------- 页脚反馈入口 ---------- */
-.foot-feedback {
-  background: transparent;
-  border: 1px solid var(--foot-line);
-  color: var(--foot-fg);
-  border-radius: 999px;
-  padding: 5px 12px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease;
+.foot-cta {
+  position: absolute;
+  top: 44px;
+  right: 24px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 300px;
+  text-align: right;
 }
-.foot-feedback:hover { background: var(--foot-fg); color: var(--foot-bg); }
+.foot-cta span { color: var(--foot-muted); font-size: 12px; line-height: 1.6; }
+.foot-feedback {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--shadow-soft);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.foot-feedback:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--shadow-soft); }
 
 /* ---------- 意见反馈 ---------- */
 .feedback-panel { max-width: 820px; }
@@ -2071,7 +2086,6 @@ body.is-full { overflow: hidden; }
 .feedback-form textarea:focus,
 .feedback-form input:focus { box-shadow: 0 0 0 3px var(--ring); }
 .feedback-form input[readonly] { color: var(--muted); cursor: default; }
-.feedback-meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .feedback-honey {
   position: absolute !important;
   left: -9999px !important;
@@ -2109,11 +2123,19 @@ body.is-full { overflow: hidden; }
   text-transform: uppercase;
 }
 .feedback-done p { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+@media (max-width: 860px) {
+  .foot-cta {
+    position: static;
+    max-width: 1180px;
+    margin: 0 auto 26px;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
 @media (max-width: 620px) {
   .feedback-form { padding: 18px; box-shadow: 5px 5px 0 var(--shadow); }
-  .feedback-meta-row { grid-template-columns: 1fr; gap: 0; }
   .feedback-actions { flex-wrap: wrap; }
   .feedback-actions .btn-primary { width: 100%; }
-  .foot-row { flex-wrap: wrap; }
-  .foot-feedback { order: 3; }
+  .foot-feedback { width: 100%; text-align: center; }
 }

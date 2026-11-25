@@ -394,10 +394,10 @@
     <div class="section-head">
       <div>
         <span class="eyebrow">FEEDBACK</span>
-        <h2>提个建议</h2>
+        <h2>需求与问题反馈</h2>
       </div>
     </div>
-    <p class="feedback-intro">用着哪里不顺手、想要什么功能，都可以写在这里。提交后会直接发到站长邮箱。</p>
+    <p class="feedback-intro">想增加什么功能、哪里用着不顺手、发现了 bug，都可以写在这里。提交后会直接发到站长邮箱。</p>
 
     <form id="feedbackForm" class="feedback-form" novalidate>
       <div id="feedbackType" class="feedback-type" role="group" aria-label="反馈类型">
@@ -408,21 +408,16 @@
       <label class="modal-field">反馈内容
         <textarea id="feedbackText" maxlength="1000" rows="6" placeholder="例如：希望环境音可以定时关闭，或者增加白噪音……"></textarea>
       </label>
-      <div class="feedback-meta-row">
-        <label class="modal-field">联系方式（选填）
-          <input id="feedbackContact" maxlength="60" placeholder="邮箱 / 微信 / QQ，方便回复你">
-        </label>
-        <label class="modal-field">当前页面
-          <input id="feedbackPage" readonly value="网站">
-        </label>
-      </div>
+      <label class="modal-field">当前页面
+        <input id="feedbackPage" readonly value="网站">
+      </label>
       <input id="feedbackHoney" class="feedback-honey" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="feedback-actions">
         <span id="feedbackCount" class="feedback-count">0 / 1000</span>
         <button id="feedbackSubmit" class="btn-primary" type="submit">发送反馈</button>
       </div>
       <p id="feedbackStatus" class="feedback-status" hidden></p>
-      <p class="sound-hint">反馈会通过 FormSubmit 发送到站长邮箱，请勿填写密码等敏感信息。</p>
+      <p class="sound-hint">反馈会自动带上你的账号邮箱，方便站长回复；请勿在内容里填写密码等敏感信息。</p>
     </form>
 
     <div id="feedbackDone" class="feedback-done" hidden>
@@ -434,10 +429,13 @@
   </div>
 
   <footer class="foot">
+    <div class="foot-cta">
+      <span>想加什么功能？发现了 bug？</span>
+      <button id="feedbackOpen" class="foot-feedback" type="button">点这里告诉站长 →</button>
+    </div>
     <div class="foot-big">KEEP<br>SHOWING UP.</div>
     <div class="foot-row">
       <span class="foot-note">FOCUS! · 保持专注</span>
-      <button id="feedbackOpen" class="foot-feedback" type="button">提个建议 →</button>
       <span class="foot-mark">FOCUS<span>!</span></span>
     </div>
   </footer>

@@ -2583,13 +2583,13 @@ function setFeedbackType(type) {
 
 function feedbackMailto() {
   const text = $("feedbackText").value.trim();
-  const contact = $("feedbackContact").value.trim();
   const page = $("feedbackPage").value || "网站";
+  const account = user && user.email ? user.email : "未登录";
   const body = [
     `类型：${feedbackType}`,
     `页面：${page}`,
+    `账号：${account}`,
     `内容：${text}`,
-    `联系方式：${contact || "未填写"}`,
   ].join("\n");
   return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(`FOCUS! ${feedbackType}`)}&body=${encodeURIComponent(body)}`;
 }
@@ -2617,7 +2617,6 @@ function openFeedback() {
   const current = currentView();
   feedbackFromView = current === "feedback" ? "timer" : current;
   $("feedbackText").value = "";
-  $("feedbackContact").value = "";
   $("feedbackHoney").value = "";
   $("feedbackCount").textContent = "0 / 1000";
   setFeedbackType("功能建议");
@@ -2669,8 +2668,8 @@ async function submitFeedback(e) {
     toast("刚提交过，稍等半分钟再试");
     return;
   }
-  const contact = $("feedbackContact").value.trim();
   const page = $("feedbackPage").value || "网站";
+  const account = user && user.email ? user.email : "未登录";
   feedbackSending = true;
   $("feedbackSubmit").disabled = true;
   $("feedbackSubmit").textContent = "发送中…";
@@ -2685,7 +2684,7 @@ async function submitFeedback(e) {
         _captcha: "false",
         类型: feedbackType,
         内容: text,
-        联系方式: contact || "未填写",
+        账号: account,
         页面: page,
         提交时间: new Date().toLocaleString("zh-CN"),
       }),
