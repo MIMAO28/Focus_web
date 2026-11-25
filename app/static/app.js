@@ -2002,27 +2002,27 @@ const SOUND_PRESETS = [
   {
     id: "rain-cafe",
     name: "雨天咖啡馆",
-    mix: { "rain-indoor": 60, "cafe-murmur": 26, "cafe-cups": 8 },
+    mix: { "rain-indoor": 45, "cafe-murmur": 12 },
   },
   {
     id: "night-library",
     name: "深夜图书馆",
-    mix: { "library-roomtone": 45, "library-chatter": 30, "page-turn": 8 },
+    mix: { "library-roomtone": 40, "library-chatter": 12 },
   },
   {
     id: "forest-study",
     name: "森林自习",
-    mix: { stream: 45, "forest-birds": 25, wind: 12 },
+    mix: { stream: 40, "forest-birds": 13 },
   },
   {
     id: "fireplace-read",
     name: "壁炉夜读",
-    mix: { "rain-indoor": 45, fireplace: 30, "page-turn": 6 },
+    mix: { "rain-indoor": 40, fireplace: 14 },
   },
   {
     id: "seaside",
     name: "海边放空",
-    mix: { "ocean-waves": 55, wind: 25, crickets: 6 },
+    mix: { "ocean-waves": 45, wind: 9 },
   },
 ];
 const SOUND_MAP = SOUNDS.reduce((map, s) => {
@@ -2030,8 +2030,8 @@ const SOUND_MAP = SOUNDS.reduce((map, s) => {
   return map;
 }, {});
 const SOUND_KEYS = {
-  mix: "focus.sound.mix.v2",
-  custom: "focus.sound.custom.v2",
+  mix: "focus.sound.mix.v3",
+  custom: "focus.sound.custom.v3",
 };
 
 const soundAudios = {};
@@ -2041,7 +2041,7 @@ let soundLastRunning = false;
 let soundBlockedWarned = false;
 let soundState = {
   mix: { ...SOUND_PRESETS[0].mix },
-  master: 80,
+  master: 70,
   autoplay: false,
   presetId: SOUND_PRESETS[0].id,
   custom: [],
