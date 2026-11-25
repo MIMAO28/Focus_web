@@ -83,41 +83,44 @@
 
   <div id="view-home" class="view" hidden>
   <section class="home-hero">
-    <div class="home-board">
+    <div class="home-hero-inner">
       <div class="home-copy">
         <span class="eyebrow">YOUR FOCUS SPACE</span>
         <h1 class="home-title">FOCUS<em>starts here.</em></h1>
-        <p class="home-sub">先选一个入口，再开始今天的专注。我会在这里陪你把这一段时间用完。</p>
+        <p class="home-sub">把注意力放回此刻。先选一个入口，再开始今天的专注。</p>
         <div class="home-actions">
-          <a class="btn-primary" href="#timer">开始专注</a>
-          <a class="ghost" href="#sound">先放点环境音</a>
+          <a class="btn-primary home-cta" href="#timer">开始专注 <span aria-hidden="true">→</span></a>
+          <a class="home-link" href="#sound">先放点环境音</a>
         </div>
         <div class="home-stats">
           <div><strong id="homeToday">0 分</strong><span>今日专注</span></div>
           <div><strong id="homeWeek">0 分</strong><span>本周专注</span></div>
           <div><strong id="homeProjects">0 个</strong><span>进行中项目</span></div>
         </div>
+        <div class="home-line">
+          <span>分项目计时</span><span>环境音混音</span><span>待办与自习室</span>
+        </div>
       </div>
 
-      <div class="home-character">
-        <div class="star-scene-card">
-          <div class="star-scene-top">
-            <span class="star-scene-tag">LIVE SCENE</span>
-            <button id="starPause" class="star-scene-pause" type="button">暂停动效</button>
-          </div>
-          <div class="star-scene-stage">
-            <canvas id="starScene" width="800" height="550" tabindex="0" role="button" aria-label="点击画面投一颗星，按空格或回车也可以"></canvas>
-            <img id="starSceneFallback" class="star-scene-fallback" alt="FOCUS 学习伙伴的求星场景" hidden>
-            <span class="star-scene-hint">点击画面 / 空格 · 投一颗星</span>
-          </div>
-        </div>
+      <div class="home-visual">
+        <div class="scene-halo" aria-hidden="true"></div>
+        <div class="scene-ring" aria-hidden="true"></div>
+        <span class="scene-star s1" aria-hidden="true">★</span>
+        <span class="scene-star s2" aria-hidden="true">✦</span>
+        <span class="scene-star s3" aria-hidden="true">★</span>
+        <span class="scene-star s4" aria-hidden="true">✦</span>
+        <span class="scene-tag">SCENE 01 · GITHUB STAR</span>
+        <figure class="scene-frame">
+          <img id="homeScene" src="/static/character/github-star-scene-latest.png" width="1536" height="1024" alt="围着围巾、拿着杯子的学习伙伴，身旁有布偶猫和 GitHub 画板">
+        </figure>
         <p class="character-caption">MIMAO-01 · 你的学习伙伴</p>
         <p class="character-credit">场景参考 Crispe《Begging for Likes on Instagram》/ Rive · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>
       </div>
     </div>
+    <a class="home-scroll" href="#home-choices">选择入口 <span aria-hidden="true">↓</span></a>
   </section>
 
-  <section class="home-choices">
+  <section class="home-choices" id="home-choices">
     <div class="section-head">
       <div>
         <span class="eyebrow">CHOOSE A ROOM</span>
@@ -298,7 +301,7 @@
 
     <div class="sound-save">
       <h3>保存当前混音</h3>
-      <p class="sound-hint">把现在这套音量组合存成预设，下次一键恢复。预设保存在当前浏览器；所有音源来自 <a href="https://freesound.org" target="_blank" rel="noopener">Freesound</a>，均为 CC0 许可。</p>
+      <p class="sound-hint">把现在这套音量组合存成预设，下次一键恢复。预设保存在当前浏览器，清除浏览器数据后会丢失。</p>
       <button id="openPresetModal" class="btn-primary small" type="button">保存为预设</button>
     </div>
   </section>
@@ -642,8 +645,7 @@
   </div>
 </div>
 
-<script>window.FOCUS_AUDIO_BASE = "/static/audio/"; window.FOCUS_CHARACTER_BASE = "/static/character/";</script>
-<script src="/static/character/star-scene.js"></script>
+<script>window.FOCUS_AUDIO_BASE = "/static/audio/";</script>
 <script src="/static/theme.js"></script>
 <script src="/static/app.js"></script>
 <script type="module" src="/static/room.js"></script>

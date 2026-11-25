@@ -166,7 +166,7 @@ function showAuth() {
   exitFull();
   closePip();
   window.dispatchEvent(new Event("focus-logout"));
-  if (window.FocusStarScene) window.FocusStarScene.setActive(false);
+  document.body.classList.remove("home-mode");
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
@@ -193,9 +193,9 @@ function showView(name, options = {}) {
     if (active) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
+  document.body.classList.toggle("home-mode", view === "home");
   if (view === "stats") renderAnalytics();
   if (view === "home") renderHome();
-  else if (window.FocusStarScene) window.FocusStarScene.setActive(false);
   if (options.scroll !== false) {
     const hash = (location.hash || "").replace("#", "");
     if (view === "timer" && hash === "projects") $("projects").scrollIntoView({ block: "start" });
@@ -2566,7 +2566,6 @@ function renderHome() {
   $("homeToday").textContent = fmtDuration(stats.today || 0);
   $("homeWeek").textContent = fmtDuration(stats.week || 0);
   $("homeProjects").textContent = `${activeProjects().length} 个`;
-  if (window.FocusStarScene) window.FocusStarScene.init();
 }
 
 /* ---------------- 意见反馈 ---------------- */

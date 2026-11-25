@@ -48,7 +48,7 @@ def main():
     html = html.replace('<script src="./app.js"></script>', scripts)
     html = html.replace('src="./app.js"', 'src="./app.js?v=%s"' % version)
     html = html.replace('src="./room.js"', 'src="./room.js?v=%s"' % version)
-    html = html.replace('src="./character/star-scene.js"', 'src="./character/star-scene.js?v=%s"' % version)
+    html = html.replace('src="./character/github-star-scene-latest.png"', 'src="./character/github-star-scene-latest.png?v=%s"' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
