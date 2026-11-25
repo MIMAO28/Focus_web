@@ -17,6 +17,7 @@
   let instance = null;
   let inputs = [];
   let loading = false;
+  let loaded = false;
   let active = true;
   let lastTrack = 0;
   let lastHeart = 0;
@@ -54,6 +55,7 @@
           try {
             instance.resizeDrawingSurfaceToCanvas();
             inputs = instance.stateMachineInputs("SM BFL Main") || [];
+            loaded = true;
             poster.classList.add("is-live");
             setHint("点击画面投一颗赞");
             if (resizeObserver) resizeObserver.disconnect();
@@ -168,7 +170,7 @@
     setActive,
     destroy,
     get state() {
-      return { ready: !!instance, active, reduced: reduceMotion, saveData };
+      return { ready: loaded, active, reduced: reduceMotion, saveData };
     },
   };
 })();
