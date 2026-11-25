@@ -1,18 +1,21 @@
 /* FOCUS! 登录页左侧：Crispe《Begging for Likes on Instagram》的 Rive 场景
    原作：Crispe / Chris Phillips，CC BY 4.0
    - 先显示静态图，页面空闲后再加载 Rive 运行时，失败时保持静态图
-   - 鼠标移动触发 Tracking Trigger，点击触发 Heart Pressed Main
+   - 整块海报都可交互：指针移动触发 Tracking，按下立即投一颗赞
    - 登录后暂停，避免后台继续渲染 */
 (() => {
-  const poster = document.getElementById("posterScene");
-  if (!poster) return;
-  const box = document.getElementById("posterSceneBox");
+  const poster = document.getElementById("authPoster");
+  const scene = document.getElementById("posterScene");
+  if (!poster || !scene) return;
   const canvas = document.getElementById("posterCanvas");
   const hint = document.getElementById("posterSceneHint");
   const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const conn = navigator.connection || null;
   const saveData = !!(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || "")));
   const scriptSrc = document.currentScript ? document.currentScript.src : location.href;
+  const DPR_CAP = 1; // 场景是扁平插画，1x 足够，显著降低每帧填充成本
+  const TRACK_GAP = 140; // 指针移动触发跟踪的最小间隔
+  const HEART_GAP = 50; // 连点保护，不丢正常点击
 
   let instance = null;
   let inputs = [];
@@ -21,6 +24,9 @@
   let active = true;
   let lastTrack = 0;
   let lastHeart = 0;
+  let hearts = 0;
+  let tracks = 0;
+  let moveQueued = false;
   let resizeObserver = null;
   let destroyed = false;
 
@@ -30,7 +36,10 @@
 
   function fire(name) {
     const input = inputs.find((item) => item.name === name);
-    if (input && typeof input.fire === "function") input.fire();
+    if (!input || typeof input.fire !== "function") return;
+    input.fire();
+    if (name === "Heart Pressed Main") hearts += 1;
+    else tracks += 1;
   }
 
   function baseUrl() {
@@ -53,16 +62,16 @@
         }),
         onLoad: () => {
           try {
-            instance.resizeDrawingSurfaceToCanvas();
+            instance.resizeDrawingSurfaceToCanvas(DPR_CAP);
             inputs = instance.stateMachineInputs("SM BFL Main") || [];
             loaded = true;
-            poster.classList.add("is-live");
+            scene.classList.add("is-live");
             setHint("点击画面投一颗赞");
             if (resizeObserver) resizeObserver.disconnect();
             resizeObserver = new ResizeObserver(() => {
-              if (instance) instance.resizeDrawingSurfaceToCanvas();
+              if (instance) instance.resizeDrawingSurfaceToCanvas(DPR_CAP);
             });
-            resizeObserver.observe(box);
+            resizeObserver.observe(scene);
             if (!active || document.hidden) instance.pause();
           } catch (err) {
             setHint("点击画面投一颗赞");
@@ -93,13 +102,20 @@
     document.head.appendChild(script);
   }
 
-  function onPointerMove(e) {
-    if (!instance) return;
-    const now = performance.now();
-    if (now - lastTrack < 550) return;
-    lastTrack = now;
-    fire("Tracking Trigger");
-    if (e.pointerType === "touch") lastTrack = now + 400;
+  function isControl(target) {
+    return !!(target && target.closest && target.closest("button, a, input, label, select, textarea"));
+  }
+
+  function onPointerMove() {
+    if (!instance || moveQueued) return;
+    moveQueued = true;
+    requestAnimationFrame(() => {
+      moveQueued = false;
+      const now = performance.now();
+      if (now - lastTrack < TRACK_GAP) return;
+      lastTrack = now;
+      fire("Tracking Trigger");
+    });
   }
 
   function onPointerEnter() {
@@ -107,25 +123,41 @@
       loadRuntime();
       return;
     }
+    const now = performance.now();
+    if (now - lastTrack < TRACK_GAP) return;
+    lastTrack = now;
     fire("Tracking Trigger");
   }
 
-  function onHeart() {
+  function onPointerDown(e) {
+    if (isControl(e.target)) return;
     if (!instance) {
       loadRuntime();
       return;
     }
     const now = performance.now();
-    if (now - lastHeart < 320) return;
+    if (now - lastHeart < HEART_GAP) return;
     lastHeart = now;
     fire("Heart Pressed Main");
+    e.preventDefault();
   }
 
   function onKey(e) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onHeart();
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    if (!instance) {
+      loadRuntime();
+      return;
     }
+    fire("Heart Pressed Main");
+  }
+
+  function onFocus() {
+    poster.classList.add("is-scene-focused");
+  }
+
+  function onBlur() {
+    poster.classList.remove("is-scene-focused");
   }
 
   function onVisibility() {
@@ -144,22 +176,23 @@
   function destroy() {
     destroyed = true;
     if (resizeObserver) resizeObserver.disconnect();
-    box.removeEventListener("pointerenter", onPointerEnter);
-    box.removeEventListener("pointermove", onPointerMove);
-    box.removeEventListener("click", onHeart);
-    box.removeEventListener("keydown", onKey);
+    poster.removeEventListener("pointerenter", onPointerEnter);
+    poster.removeEventListener("pointermove", onPointerMove);
+    poster.removeEventListener("pointerdown", onPointerDown);
+    canvas.removeEventListener("keydown", onKey);
+    canvas.removeEventListener("focus", onFocus);
+    canvas.removeEventListener("blur", onBlur);
     document.removeEventListener("visibilitychange", onVisibility);
     if (instance) instance.cleanup();
     instance = null;
   }
 
-  box.setAttribute("tabindex", "0");
-  box.setAttribute("role", "button");
-  box.setAttribute("aria-label", "角色场景，点击或按回车投一颗赞");
-  box.addEventListener("pointerenter", onPointerEnter);
-  box.addEventListener("pointermove", onPointerMove);
-  box.addEventListener("click", onHeart);
-  box.addEventListener("keydown", onKey);
+  poster.addEventListener("pointerenter", onPointerEnter);
+  poster.addEventListener("pointermove", onPointerMove);
+  poster.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("keydown", onKey);
+  canvas.addEventListener("focus", onFocus);
+  canvas.addEventListener("blur", onBlur);
   document.addEventListener("visibilitychange", onVisibility);
 
   if (reduceMotion) setHint("静态画面（已遵循系统的减少动态设置）");
@@ -170,7 +203,7 @@
     setActive,
     destroy,
     get state() {
-      return { ready: loaded, active, reduced: reduceMotion, saveData };
+      return { ready: loaded, active, reduced: reduceMotion, saveData, dpr: DPR_CAP, hearts, tracks };
     },
   };
 })();

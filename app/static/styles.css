@@ -160,32 +160,25 @@ button, input, select { font-family: inherit; color: inherit; }
 
 .poster-sub { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: inherit; opacity: .75; }
 
-/* 登录页左侧的角色场景 */
+/* 登录页左侧：场景从底部铺满海报，文字浮在上层 */
 .poster-scene {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  margin-top: 16px;
-  gap: 8px;
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  bottom: 0;
+  aspect-ratio: 767 / 517;
+  z-index: 0;
+  pointer-events: none;
 }
-.poster-scene-box {
-  position: relative;
-  flex: 1;
-  min-height: 200px;
-  overflow: hidden;
-  background: transparent;
-}
-.poster-scene-box img {
+.poster-scene img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  pointer-events: none;
   user-select: none;
 }
-.poster-scene-box canvas {
+.poster-scene canvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -195,19 +188,26 @@ button, input, select { font-family: inherit; color: inherit; }
   transition: opacity .35s ease;
   cursor: pointer;
 }
-.poster-scene-box img,
-.poster-scene-box canvas {
+.poster-scene img,
+.poster-scene canvas {
   filter: var(--scene-filter, hue-rotate(-80deg) saturate(.82) contrast(1.02));
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
 }
 .poster-scene.is-live canvas { opacity: 1; }
 .poster-scene.is-live img { visibility: hidden; }
-.poster-credit { margin: 0; font-size: 10px; line-height: 1.6; opacity: .72; }
+.poster-scene-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 34%;
+  background: linear-gradient(to bottom, var(--hero-bg) 0%, var(--hero-bg) 18%, transparent 100%);
+  pointer-events: none;
+}
+.poster-top,
+.poster-head { position: relative; z-index: 2; }
+.auth-poster { cursor: pointer; }
+.auth-poster.is-scene-focused { outline: 3px solid var(--ink); outline-offset: -8px; }
+.poster-credit { margin: 14px 0 0; font-size: 10px; line-height: 1.6; opacity: .72; }
 .poster-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
 .sticker {
@@ -2190,21 +2190,23 @@ body.is-full { overflow: hidden; }
 
 /* ---------- 登录页角色场景的响应式 ---------- */
 @media (max-width: 1020px) {
-  .poster-scene { width: 100%; }
-  .poster-scene-box {
-    flex: none;
+  .poster-scene {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
     width: 100%;
     max-width: 620px;
-    aspect-ratio: 3 / 2;
-    min-height: 0;
-    margin: 0 auto;
+    margin: 16px auto 0;
   }
+  .poster-scene-fade { height: 24%; }
   .poster-credit { width: 100%; max-width: 620px; margin: 0 auto; }
 }
 @media (max-width: 620px) {
   .poster-credit { font-size: 9.5px; }
 }
-.poster-scene-box:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+/* 场景获得键盘焦点时整块海报显示焦点环 */
+
 @media (max-width: 620px) {
   .poster-top { padding-right: 100px; flex-wrap: wrap; }
 }
