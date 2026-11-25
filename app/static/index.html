@@ -60,7 +60,7 @@
 <div id="appView" hidden>
   <header class="topbar">
     <div class="nav-shell">
-      <a class="logo" href="#timer">FOCUS<span>!</span></a>
+      <a class="logo" href="#home">FOCUS<span>!</span></a>
       <nav class="nav" aria-label="页面切换">
         <a href="#timer" class="active" aria-current="page">计时</a>
         <a href="#sound">环境音</a>
@@ -80,6 +80,28 @@
       </div>
     </div>
   </header>
+
+  <div id="view-home" class="view" hidden>
+  <section class="landing">
+    <span class="eyebrow">STUDY SPACE</span>
+    <h1 class="landing-title">FOCUS<span>!</span></h1>
+    <p class="landing-sub">先坐下来，再把注意力放回这一分钟。</p>
+    <div class="landing-actions">
+      <a class="btn-primary" href="#timer">开始专注 <span aria-hidden="true">→</span></a>
+      <a class="ghost" href="#sound">放点环境音</a>
+    </div>
+    <div class="landing-stats">
+      <div><strong id="homeToday">0 分</strong><span>今日专注</span></div>
+      <div><strong id="homeWeek">0 分</strong><span>本周专注</span></div>
+    </div>
+    <nav class="landing-links" aria-label="更多入口">
+      <a href="#todo">待办</a><span aria-hidden="true">·</span>
+      <a href="#room">自习室</a><span aria-hidden="true">·</span>
+      <a href="#stats">统计</a><span aria-hidden="true">·</span>
+      <a href="#profile">我的</a>
+    </nav>
+  </section>
+  </div>
 
   <div id="view-timer" class="view">
   <section class="hero-wrap">

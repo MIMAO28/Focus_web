@@ -165,6 +165,7 @@ $("authForm").addEventListener("submit", async (e) => {
 function showAuth() {
   exitFull();
   closePip();
+  document.body.classList.remove("landing-mode");
   window.dispatchEvent(new Event("focus-logout"));
   user = null;
   $("appView").hidden = true;
@@ -173,25 +174,27 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["timer", "sound", "todo", "room", "stats", "profile", "feedback"];
+const VIEWS = ["home", "timer", "sound", "todo", "room", "stats", "profile", "feedback"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
   if (name === "projects") return "timer";
-  return VIEWS.includes(name) ? name : "timer";
+  return VIEWS.includes(name) ? name : "home";
 }
 
 function showView(name, options = {}) {
-  const view = VIEWS.includes(name) ? name : "timer";
+  const view = VIEWS.includes(name) ? name : "home";
   VIEWS.forEach((key) => {
     $("view-" + key).hidden = key !== view;
   });
+  document.body.classList.toggle("landing-mode", view === "home");
   document.querySelectorAll(".nav a").forEach((a) => {
     const active = a.getAttribute("href") === "#" + view;
     a.classList.toggle("active", active);
     if (active) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
+  if (view === "home") renderHome();
   if (view === "stats") renderAnalytics();
   if (options.scroll !== false) {
     const hash = (location.hash || "").replace("#", "");
@@ -1302,6 +1305,14 @@ $("todoModal").addEventListener("click", (e) => {
 });
 
 /* ---------------- 统计 ---------------- */
+function renderHome() {
+  const today = $("homeToday");
+  const week = $("homeWeek");
+  if (!today || !week) return;
+  today.textContent = fmtDuration(stats.today || 0);
+  week.textContent = fmtDuration(stats.week || 0);
+}
+
 function renderStats() {
   $("todayTotal").textContent = fmtDuration(stats.today || 0);
   $("weekTotal").textContent = fmtDuration(stats.week || 0);
@@ -1910,6 +1921,7 @@ window.addEventListener("beforeunload", persistTimer);
 
 document.addEventListener("keydown", (e) => {
   if ($("appView").hidden || !$("confirmModal").hidden) return;
+  if (currentView() === "home") return;
   const tag = (e.target.tagName || "").toLowerCase();
   if (tag === "input" || tag === "select" || tag === "textarea" || tag === "button") return;
   if (e.code === "Space") {
