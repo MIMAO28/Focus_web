@@ -166,7 +166,6 @@ function showAuth() {
   exitFull();
   closePip();
   window.dispatchEvent(new Event("focus-logout"));
-  document.body.classList.remove("home-mode");
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
@@ -174,12 +173,12 @@ function showAuth() {
 }
 
 /* ---------------- 视图切换 ---------------- */
-const VIEWS = ["home", "timer", "sound", "todo", "room", "stats", "profile", "feedback"];
+const VIEWS = ["timer", "sound", "todo", "room", "stats", "profile", "feedback"];
 
 function currentView() {
   const name = (location.hash || "").replace("#", "");
   if (name === "projects") return "timer";
-  return VIEWS.includes(name) ? name : "home";
+  return VIEWS.includes(name) ? name : "timer";
 }
 
 function showView(name, options = {}) {
@@ -193,9 +192,7 @@ function showView(name, options = {}) {
     if (active) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
-  document.body.classList.toggle("home-mode", view === "home");
   if (view === "stats") renderAnalytics();
-  if (view === "home") renderHome();
   if (options.scroll !== false) {
     const hash = (location.hash || "").replace("#", "");
     if (view === "timer" && hash === "projects") $("projects").scrollIntoView({ block: "start" });
@@ -2558,14 +2555,6 @@ function initSound() {
   bindSoundControls();
   syncSoundUI();
   soundLastRunning = !!(window.FocusTimerState && window.FocusTimerState.running);
-}
-
-/* ---------------- 首页 ---------------- */
-function renderHome() {
-  if (!$("homeToday")) return;
-  $("homeToday").textContent = fmtDuration(stats.today || 0);
-  $("homeWeek").textContent = fmtDuration(stats.week || 0);
-  $("homeProjects").textContent = `${activeProjects().length} 个`;
 }
 
 /* ---------------- 意见反馈 ---------------- */
