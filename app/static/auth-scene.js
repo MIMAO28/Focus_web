@@ -48,7 +48,7 @@
         artboard: "BFL_AB_InteractionMain",
         stateMachines: "SM BFL Main",
         layout: new window.rive.Layout({
-          fit: window.rive.Fit.Contain,
+          fit: window.rive.Fit.Cover,
           alignment: window.rive.Alignment.Center,
         }),
         onLoad: () => {

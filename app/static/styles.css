@@ -173,18 +173,15 @@ button, input, select { font-family: inherit; color: inherit; }
   position: relative;
   flex: 1;
   min-height: 200px;
-  border: var(--line);
-  border-radius: 18px;
   overflow: hidden;
-  background: #cbf5d7;
-  box-shadow: 6px 6px 0 var(--shadow);
+  background: transparent;
 }
 .poster-scene-box img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   pointer-events: none;
   user-select: none;
 }
@@ -197,6 +194,16 @@ button, input, select { font-family: inherit; color: inherit; }
   opacity: 0;
   transition: opacity .35s ease;
   cursor: pointer;
+}
+.poster-scene-box img,
+.poster-scene-box canvas {
+  filter: var(--scene-filter, hue-rotate(-80deg) saturate(.82) contrast(1.02));
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 .poster-scene.is-live canvas { opacity: 1; }
 .poster-scene.is-live img { visibility: hidden; }
@@ -2195,7 +2202,6 @@ body.is-full { overflow: hidden; }
   .poster-credit { width: 100%; max-width: 620px; margin: 0 auto; }
 }
 @media (max-width: 620px) {
-  .poster-scene-box { border-radius: 14px; box-shadow: 4px 4px 0 var(--shadow); }
   .poster-credit { font-size: 9.5px; }
 }
 .poster-scene-box:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }

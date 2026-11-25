@@ -65,6 +65,18 @@
     const l = (max + min) / 2;
     return l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
   };
+  const hue = (hex) => {
+    const [r, g, b] = hex2rgb(hex).map((v) => v / 255);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    if (!d) return 0;
+    let h;
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    return (h * 60 + 360) % 360;
+  };
   const rgba = (hex, a) => {
     const [r, g, b] = hex2rgb(hex);
     return `rgba(${r}, ${g}, ${b}, ${a})`;
@@ -130,6 +142,11 @@
     }
     const footFg = bestFg(footBg, ["#F3E9E0", ink]);
 
+    // 登录页场景的底色是绿色（约 137°），转成海报主色的色相，让它跟着主题走
+    let sceneRotate = Math.round(hue(heroBg) - 137);
+    if (sceneRotate > 180) sceneRotate -= 360;
+    if (sceneRotate < -180) sceneRotate += 360;
+
     return {
       "--cream": cream,
       "--paper": paper,
@@ -164,6 +181,7 @@
       "--ring": rgba(accent, 0.32),
       "--shadow": shadow,
       "--shadow-soft": mode === "light" ? rgba(shadow, 0.22) : "rgba(0, 0, 0, 0.5)",
+      "--scene-filter": `hue-rotate(${sceneRotate}deg) saturate(.82) contrast(1.02)`,
     };
   }
 
