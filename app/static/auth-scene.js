@@ -24,6 +24,7 @@
   const FLIGHT_MS = 620; // 爱心飞行时长
   const MAX_FLIGHTS = 3; // 同时飞行的爱心上限
   const CUP = { x: 0.572, y: 0.462 }; // 杯口中心（场景百分比，已按画面校准）
+  const STATIC_ONLY = true; // 原动画里杯子上的爱心是固定图层、不跟随杯子，这里只保留静态插画
 
   let instance = null;
   let inputs = [];
@@ -46,6 +47,15 @@
 
   function setHint(text) {
     if (hint) hint.textContent = text;
+  }
+
+  // 爱心落到杯口时，画面轻轻一顿作为反馈
+  let bumpTimer = 0;
+  function bump() {
+    if (reduceMotion) return;
+    scene.classList.add("is-bump");
+    clearTimeout(bumpTimer);
+    bumpTimer = setTimeout(() => scene.classList.remove("is-bump"), 340);
   }
 
   // 场景顶边贴住标题下方：把标题底边的位置写入 --scene-top
@@ -114,7 +124,7 @@
   }
 
   function loadRuntime() {
-    if (instance || loading || destroyed || reduceMotion || saveData) return;
+    if (STATIC_ONLY || instance || loading || destroyed || reduceMotion || saveData) return;
     loading = true;
     const base = baseUrl();
     const script = document.createElement("script");
@@ -226,6 +236,7 @@
         flight.done = true;
         flight.el.classList.remove("is-visible");
         fire("Heart Pressed Main");
+        bump();
         landed += 1;
       }
     }
@@ -309,6 +320,7 @@
   function destroy() {
     destroyed = true;
     stopTick();
+    clearTimeout(bumpTimer);
     if (resizeObserver) resizeObserver.disconnect();
     if (layoutObserver) layoutObserver.disconnect();
     window.removeEventListener("resize", syncSceneTop);

@@ -184,6 +184,12 @@ button, input, select { font-family: inherit; color: inherit; }
   pointer-events: none;
   z-index: 1;
 }
+/* 爱心落杯时画面轻顿一下 */
+.poster-scene.is-bump .scene-art { animation: scene-bump .34s ease; }
+@keyframes scene-bump {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  45% { transform: translateX(-50%) translateY(-3px) scale(1.012); }
+}
 /* 展板左上角换成 GitHub 标 */
 .scene-gh {
   position: absolute;
