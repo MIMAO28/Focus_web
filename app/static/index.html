@@ -18,34 +18,34 @@
 <div id="toast" class="toast" hidden></div>
 
 <main id="authView" class="auth" hidden>
-  <section class="auth-visual">
-    <div class="auth-scene" id="authScene" tabindex="0" role="button" aria-label="点击画面投一颗赞，按回车也可以">
-      <img id="posterStill" src="/static/character/crispe-still.png" srcset="/static/character/crispe-still@2x.png 2x" width="767" height="517" alt="围着围巾、拿着杯子的角色，身旁有猫和社交画板">
-      <canvas id="posterCanvas" width="900" height="607" aria-hidden="true"></canvas>
+  <div class="auth-poster" id="authPoster">
+    <div class="poster-top">
+      <span class="badge">STUDY CLUB</span>
+      <span class="badge badge-dark">EST. 2026</span>
+    </div>
+    <div class="auth-tools">
+      <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
+      <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
+    </div>
+    <div class="poster-head">
+      <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
+      <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
+      <p class="scene-status" id="posterSceneHint">正在加载动态场景</p>
+    </div>
+
+    <div class="poster-scene" id="authScene" tabindex="0" role="button" aria-label="点击画面投一颗赞，按回车也可以">
+      <div class="scene-art" id="sceneArt">
+        <img id="posterStill" src="/static/character/crispe-still.png" srcset="/static/character/crispe-still@2x.png 2x" width="767" height="517" alt="围着围巾、拿着杯子的角色，身旁有猫和社交画板">
+        <canvas id="posterCanvas" width="900" height="607" aria-hidden="true"></canvas>
+        <div class="scene-fade" aria-hidden="true"></div>
+      </div>
       <div class="scene-heart" id="sceneHeart" aria-hidden="true">
         <svg viewBox="0 0 32 32" focusable="false"><path d="M16 27.6C13.4 25.6 4.4 19.3 4.4 12.8 4.4 9 7.3 6.4 10.6 6.4c2 0 3.8 1.1 5.4 3 1.6-1.9 3.4-3 5.4-3 3.3 0 6.2 2.6 6.2 6.4 0 6.5-9 12.8-11.6 14.8z"/></svg>
       </div>
     </div>
-  </section>
+  </div>
 
-  <section class="auth-panel">
-    <header class="auth-brand">
-      <div class="brand-row">
-        <div class="poster-top">
-          <span class="badge">STUDY CLUB</span>
-          <span class="badge badge-dark">EST. 2026</span>
-        </div>
-        <div class="auth-tools">
-          <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
-          <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
-        </div>
-      </div>
-      <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
-      <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
-      <p class="scene-status" id="posterSceneHint">正在加载动态场景</p>
-    </header>
-
-    <div class="auth-card">
+  <div class="auth-card">
     <div class="tabs">
       <button class="tab active" data-auth-tab="login" type="button">登录</button>
       <button class="tab" data-auth-tab="register" type="button">注册</button>
@@ -66,7 +66,6 @@
       <button id="resendBtn" class="link-btn" type="button" hidden>没收到验证邮件？重新发送</button>
     </form>
   </div>
-  </section>
 </main>
 
 <div id="appView" hidden>
