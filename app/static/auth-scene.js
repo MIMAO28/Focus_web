@@ -33,6 +33,7 @@
   let destroyed = false;
   let rafId = 0;
   let resizeObserver = null;
+  let layoutObserver = null;
   let pointer = null;
   let heartShown = false;
   const heartPos = { x: 0, y: 0 };
@@ -45,6 +46,18 @@
 
   function setHint(text) {
     if (hint) hint.textContent = text;
+  }
+
+  // 场景顶边贴住标题下方：把标题底边的位置写入 --scene-top
+  const head = poster.querySelector(".poster-head");
+  function syncSceneTop() {
+    if (destroyed || !head) return;
+    const posterRect = poster.getBoundingClientRect();
+    if (!posterRect.height) return;
+    const headRect = head.getBoundingClientRect();
+    const top = Math.round(headRect.bottom - posterRect.top + 14);
+    const max = Math.max(0, posterRect.height - 120);
+    poster.style.setProperty("--scene-top", Math.max(0, Math.min(top, max)) + "px");
   }
 
   function fire(name) {
@@ -297,6 +310,8 @@
     destroyed = true;
     stopTick();
     if (resizeObserver) resizeObserver.disconnect();
+    if (layoutObserver) layoutObserver.disconnect();
+    window.removeEventListener("resize", syncSceneTop);
     poster.removeEventListener("pointerenter", onEnter);
     poster.removeEventListener("pointermove", onMove);
     poster.removeEventListener("pointerleave", onLeave);
@@ -315,6 +330,16 @@
   poster.addEventListener("pointerdown", onDown);
   scene.addEventListener("keydown", onKey);
   document.addEventListener("visibilitychange", onVisibility);
+
+  syncSceneTop();
+  window.addEventListener("resize", syncSceneTop);
+  if ("ResizeObserver" in window) {
+    layoutObserver = new ResizeObserver(syncSceneTop);
+    layoutObserver.observe(poster);
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncSceneTop).catch(() => {});
+  }
 
   if (reduceMotion) setHint("静态画面（已遵循系统的减少动态设置）");
   else if (saveData) setHint("静态画面（已按省流设置关闭动态）");

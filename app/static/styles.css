@@ -145,10 +145,11 @@ button, input, select { font-family: inherit; color: inherit; }
 .poster-scene:focus-visible { outline: 3px solid var(--ink); outline-offset: -8px; }
 .scene-art {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 50%;
+  top: var(--scene-top, 30%);
   bottom: 0;
   aspect-ratio: 767 / 517;
+  transform: translateX(-50%);
 }
 .scene-art img {
   position: absolute;
@@ -241,9 +242,6 @@ button, input, select { font-family: inherit; color: inherit; }
   transform: rotate(-2deg);
   margin-top: 4px;
 }
-
-.poster-sub { margin: 10px 0 0; max-width: 330px; font-size: 13px; line-height: 1.7; color: inherit; opacity: .78; }
-.scene-status { margin: 10px 0 0; font-size: 10.5px; line-height: 1.6; color: inherit; opacity: .6; }
 
 .sticker {
   position: absolute;
@@ -2230,5 +2228,4 @@ body.is-full { overflow: hidden; }
   .poster-title { font-size: clamp(40px, 13vw, 54px); letter-spacing: -2px; }
   .auth-tools { top: 14px; right: 14px; }
   .poster-top { padding-right: 118px; flex-wrap: wrap; }
-  .poster-sub { font-size: 12.5px; }
 }
