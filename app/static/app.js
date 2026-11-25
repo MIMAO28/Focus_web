@@ -169,6 +169,7 @@ function showAuth() {
   user = null;
   $("appView").hidden = true;
   $("authView").hidden = false;
+  if (window.FocusAuthScene) window.FocusAuthScene.setActive(true);
   setAuthMode("login");
 }
 
@@ -394,6 +395,7 @@ function enterApp(me) {
   projects = me.projects || [];
   $("authView").hidden = true;
   $("appView").hidden = false;
+  if (window.FocusAuthScene) window.FocusAuthScene.setActive(false);
   renderUserChip();
   renderProfile();
   $("resendBtn").hidden = true;

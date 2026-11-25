@@ -48,16 +48,22 @@ def main():
     html = html.replace('<script src="./app.js"></script>', scripts)
     html = html.replace('src="./app.js"', 'src="./app.js?v=%s"' % version)
     html = html.replace('src="./room.js"', 'src="./room.js?v=%s"' % version)
+    html = html.replace('src="./auth-scene.js"', 'src="./auth-scene.js?v=%s"' % version)
+    html = html.replace('src="./character/crispe-still.png"', 'src="./character/crispe-still.png?v=%s"' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
     shutil.copy(os.path.join(SRC, "styles.css"), os.path.join(OUT, "styles.css"))
     shutil.copy(os.path.join(SRC, "theme.js"), os.path.join(OUT, "theme.js"))
+    shutil.copy(os.path.join(SRC, "auth-scene.js"), os.path.join(OUT, "auth-scene.js"))
     shutil.copy(os.path.join(SRC, "app.js"), os.path.join(OUT, "app.js"))
     shutil.copy(os.path.join(SRC, "room.js"), os.path.join(OUT, "room.js"))
     audio_src = os.path.join(SRC, "audio")
     if os.path.isdir(audio_src):
         shutil.copytree(audio_src, os.path.join(OUT, "audio"))
+    char_src = os.path.join(SRC, "character")
+    if os.path.isdir(char_src):
+        shutil.copytree(char_src, os.path.join(OUT, "character"))
     open(os.path.join(OUT, ".nojekyll"), "w", encoding="utf-8").write("")
 
     print("built site/ (%s): %s" % ("cloud" if cloud else "local", ", ".join(sorted(os.listdir(OUT)))))

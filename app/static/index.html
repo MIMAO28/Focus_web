@@ -27,11 +27,17 @@
       <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
       <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
     </div>
-    <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
-    <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
-    <div class="sticker sticker-a">25:00</div>
-    <div class="sticker sticker-b">NO EXCUSES</div>
-    <div class="sticker sticker-c">×3 ROUNDS</div>
+    <div class="poster-head">
+      <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
+      <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
+    </div>
+    <div class="poster-scene" id="posterScene">
+      <div class="poster-scene-box" id="posterSceneBox">
+        <img id="posterStill" src="/static/character/crispe-still.png" width="767" height="517" alt="围着围巾、拿着杯子的角色，身旁有猫和社交画板">
+        <canvas id="posterCanvas" width="900" height="607" aria-label="可交互的角色场景，点击画面投一颗赞"></canvas>
+      </div>
+      <p class="poster-credit">角色与场景 <a href="https://rive.app/marketplace/17818-33452-begging-for-likes-on-instagram/" target="_blank" rel="noopener">Crispe / Chris Phillips《Begging for Likes on Instagram》</a><br><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · <span id="posterSceneHint">正在加载动态场景</span></p>
+    </div>
   </div>
 
   <div class="auth-card">
@@ -559,6 +565,7 @@
 
 <script>window.FOCUS_AUDIO_BASE = "/static/audio/";</script>
 <script src="/static/theme.js"></script>
+<script src="/static/auth-scene.js"></script>
 <script src="/static/app.js"></script>
 <script type="module" src="/static/room.js"></script>
 </body>
