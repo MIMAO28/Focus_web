@@ -149,6 +149,7 @@ button, input, select { font-family: inherit; color: inherit; }
   top: var(--scene-top, 30%);
   bottom: 0;
   aspect-ratio: 767 / 517;
+  border-top: 2px solid var(--ink);
   transform: translateX(-50%);
 }
 .scene-art img {
@@ -173,15 +174,15 @@ button, input, select { font-family: inherit; color: inherit; }
   filter: var(--scene-filter, hue-rotate(-80deg) saturate(.82) contrast(1.02));
 }
 .poster-scene.is-live .scene-art canvas { opacity: 1; }
-.poster-scene.is-live .scene-art img { visibility: hidden; }
-.scene-fade {
+.poster-scene.is-live .scene-art .scene-still { visibility: hidden; }
+.scene-patch {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 30%;
-  background: linear-gradient(to bottom, var(--hero-bg) 0%, var(--hero-bg) 16%, transparent 100%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   pointer-events: none;
+  z-index: 1;
 }
 
 .scene-heart {

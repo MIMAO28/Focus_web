@@ -51,6 +51,8 @@ def main():
     html = html.replace('src="./auth-scene.js"', 'src="./auth-scene.js?v=%s"' % version)
     html = html.replace('src="./character/crispe-still.png"', 'src="./character/crispe-still.png?v=%s"' % version)
     html = html.replace('./character/crispe-still@2x.png', './character/crispe-still@2x.png?v=%s' % version)
+    html = html.replace('src="./character/crispe-patch.png"', 'src="./character/crispe-patch.png?v=%s"' % version)
+    html = html.replace('./character/crispe-patch@2x.png', './character/crispe-patch@2x.png?v=%s' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
