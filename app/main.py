@@ -35,6 +35,7 @@ class Credentials(BaseModel):
 
 class ProjectIn(BaseModel):
     name: str
+    color: str = ""
 
 
 class ProfileIn(BaseModel):
@@ -273,7 +274,9 @@ def create_project(body: ProjectIn, request: Request):
         count = conn.execute(
             "SELECT COUNT(*) AS c FROM projects WHERE user_id = ?", (user["id"],)
         ).fetchone()["c"]
-        color = PALETTE[count % len(PALETTE)]
+        color = (body.color or "").strip().upper()
+        if color not in PALETTE:
+            color = PALETTE[count % len(PALETTE)]
         conn.execute(
             "INSERT INTO projects(user_id, name, color, created_at) VALUES (?, ?, ?, ?)",
             (user["id"], name, color, int(time.time())),

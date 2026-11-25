@@ -860,25 +860,64 @@ async function chooseProject(nextId) {
   }
 }
 
-async function addProject() {
-  const input = $("projectName");
+const PROJECT_COLORS = ["#FF3B2F", "#C6FF3D", "#FFD166", "#7BD389", "#8AB6FF", "#FF8FC7"];
+let projectDraftColor = PROJECT_COLORS[0];
+
+function renderProjectColorGrid() {
+  const grid = $("projectColorGrid");
+  grid.textContent = "";
+  PROJECT_COLORS.forEach((color) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "color-swatch" + (color === projectDraftColor ? " active" : "");
+    btn.style.background = color;
+    btn.setAttribute("aria-label", `选择项目颜色 ${color}`);
+    btn.addEventListener("click", () => {
+      projectDraftColor = color;
+      renderProjectColorGrid();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function openProjectModal() {
+  projectDraftColor = PROJECT_COLORS[projects.length % PROJECT_COLORS.length];
+  $("projectModalName").value = "";
+  renderProjectColorGrid();
+  $("projectModal").hidden = false;
+  setTimeout(() => $("projectModalName").focus(), 0);
+}
+
+function closeProjectModal() {
+  $("projectModal").hidden = true;
+}
+
+async function createProjectFromModal() {
+  const input = $("projectModalName");
   const name = input.value.trim();
   if (!name) {
     toast("先输入项目名称");
+    input.focus();
     return;
   }
+  const btn = $("projectModalCreate");
+  btn.disabled = true;
+  btn.textContent = "创建中…";
   try {
     const data = await api("/api/projects", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, color: projectDraftColor }),
     });
     projects = data.projects;
-    input.value = "";
     const created = projects[projects.length - 1];
     renderProjects(created ? created.id : null);
+    closeProjectModal();
     toast(`已创建项目：${name}`);
   } catch (err) {
     toast(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "创建项目";
   }
 }
 
@@ -1120,9 +1159,21 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && $("confirmModal").hidden && !$("detailModal").hidden) closeDetail();
 });
 
-$("addProject").addEventListener("click", addProject);
-$("projectName").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addProject();
+$("openProjectModal").addEventListener("click", openProjectModal);
+$("projectModalCancel").addEventListener("click", closeProjectModal);
+$("projectModalCreate").addEventListener("click", createProjectFromModal);
+$("projectModalName").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") createProjectFromModal();
+  if (e.key === "Escape") closeProjectModal();
+});
+$("projectModal").addEventListener("click", (e) => {
+  if (e.target.id === "projectModal") closeProjectModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("projectModal").hidden) closeProjectModal();
+  else if (!$("todoModal").hidden) closeTodoModal();
+  else if (!$("presetModal").hidden) closePresetModal();
 });
 
 /* ---------------- 待办清单 ---------------- */
@@ -1139,7 +1190,7 @@ function loadTodos() {
     if (Array.isArray(data)) {
       todos = data
         .filter((t) => t && typeof t.text === "string" && t.text.trim())
-        .map((t) => ({ text: t.text, done: !!t.done }));
+        .map((t) => ({ text: t.text, done: !!t.done, important: !!t.important }));
     }
   } catch (e) {
     todos = [];
@@ -1201,29 +1252,53 @@ function renderTodos() {
 
     const meta = document.createElement("div");
     meta.className = "todo-meta";
-    meta.textContent = todo.done ? "已完成" : "未完成";
+    if (todo.important && !todo.done) {
+      const badge = document.createElement("span");
+      badge.className = "todo-badge";
+      badge.textContent = "重要";
+      meta.appendChild(badge);
+    }
+    meta.appendChild(document.createTextNode(todo.done ? "已完成" : "未完成"));
 
     card.append(head, meta);
     list.appendChild(card);
   });
 }
 
-function addTodo() {
-  const input = $("todoInput");
+function openTodoModal() {
+  $("todoModalText").value = "";
+  $("todoModalImportant").checked = false;
+  $("todoModal").hidden = false;
+  setTimeout(() => $("todoModalText").focus(), 0);
+}
+
+function closeTodoModal() {
+  $("todoModal").hidden = true;
+}
+
+function addTodoFromModal() {
+  const input = $("todoModalText");
   const text = input.value.trim();
   if (!text) {
     toast("先写点内容");
+    input.focus();
     return;
   }
-  todos.push({ text, done: false });
-  input.value = "";
+  todos.push({ text, done: false, important: $("todoModalImportant").checked });
   saveTodos();
   renderTodos();
+  closeTodoModal();
 }
 
-$("todoAdd").addEventListener("click", addTodo);
-$("todoInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addTodo();
+$("openTodoModal").addEventListener("click", openTodoModal);
+$("todoModalCancel").addEventListener("click", closeTodoModal);
+$("todoModalSave").addEventListener("click", addTodoFromModal);
+$("todoModalText").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addTodoFromModal();
+  if (e.key === "Escape") closeTodoModal();
+});
+$("todoModal").addEventListener("click", (e) => {
+  if (e.target.id === "todoModal") closeTodoModal();
 });
 
 /* ---------------- 统计 ---------------- */
@@ -1927,27 +2002,27 @@ const SOUND_PRESETS = [
   {
     id: "rain-cafe",
     name: "雨天咖啡馆",
-    mix: { "rain-indoor": 55, "cafe-murmur": 40, "cafe-cups": 20, "rain-thunder": 15 },
+    mix: { "rain-indoor": 60, "cafe-murmur": 26, "cafe-cups": 8 },
   },
   {
     id: "night-library",
     name: "深夜图书馆",
-    mix: { "library-chatter": 45, "library-roomtone": 25, keyboard: 20, "page-turn": 15 },
+    mix: { "library-roomtone": 45, "library-chatter": 30, "page-turn": 8 },
   },
   {
     id: "forest-study",
     name: "森林自习",
-    mix: { "forest-birds": 55, stream: 35, wind: 20 },
+    mix: { stream: 45, "forest-birds": 25, wind: 12 },
   },
   {
     id: "fireplace-read",
     name: "壁炉夜读",
-    mix: { fireplace: 60, "rain-indoor": 25, "page-turn": 15 },
+    mix: { "rain-indoor": 45, fireplace: 30, "page-turn": 6 },
   },
   {
     id: "seaside",
     name: "海边放空",
-    mix: { "ocean-waves": 60, wind: 30, crickets: 10 },
+    mix: { "ocean-waves": 55, wind: 25, crickets: 6 },
   },
 ];
 const SOUND_MAP = SOUNDS.reduce((map, s) => {
@@ -1955,8 +2030,8 @@ const SOUND_MAP = SOUNDS.reduce((map, s) => {
   return map;
 }, {});
 const SOUND_KEYS = {
-  mix: "focus.sound.mix.v1",
-  custom: "focus.sound.custom.v1",
+  mix: "focus.sound.mix.v2",
+  custom: "focus.sound.custom.v2",
 };
 
 const soundAudios = {};
@@ -1966,7 +2041,7 @@ let soundLastRunning = false;
 let soundBlockedWarned = false;
 let soundState = {
   mix: { ...SOUND_PRESETS[0].mix },
-  master: 100,
+  master: 80,
   autoplay: false,
   presetId: SOUND_PRESETS[0].id,
   custom: [],
@@ -2337,6 +2412,72 @@ function syncSoundUI() {
   if ($("soundAutoplay")) $("soundAutoplay").checked = soundState.autoplay;
 }
 
+function openPresetModal() {
+  const box = $("presetModalMix");
+  box.textContent = "";
+  const active = SOUNDS.filter((s) => (soundState.mix[s.id] || 0) > 0).sort(
+    (a, b) => (soundState.mix[b.id] || 0) - (soundState.mix[a.id] || 0)
+  );
+  if (!active.length) {
+    const empty = document.createElement("p");
+    empty.className = "preset-mix-empty";
+    empty.textContent = "当前还没有声音，先调高至少一个音量再保存。";
+    box.appendChild(empty);
+  } else {
+    active.forEach((sound) => {
+      const row = document.createElement("div");
+      row.className = "preset-mix-row";
+      const name = document.createElement("span");
+      name.textContent = sound.name;
+      const vol = document.createElement("strong");
+      vol.textContent = `${soundState.mix[sound.id]}%`;
+      row.append(name, vol);
+      box.appendChild(row);
+    });
+  }
+  $("presetModalName").value = "";
+  $("presetModal").hidden = false;
+  setTimeout(() => $("presetModalName").focus(), 0);
+}
+
+function closePresetModal() {
+  $("presetModal").hidden = true;
+}
+
+function savePresetFromModal() {
+  const input = $("presetModalName");
+  const name = input.value.trim().slice(0, 12);
+  const mix = {};
+  SOUNDS.forEach((sound) => {
+    if ((soundState.mix[sound.id] || 0) > 0) mix[sound.id] = soundState.mix[sound.id];
+  });
+  if (!name) {
+    toast("先给这套环境起个名字");
+    input.focus();
+    return;
+  }
+  if (!Object.keys(mix).length) {
+    toast("先把至少一个声音的音量调高");
+    return;
+  }
+  const existing = soundState.custom.find((p) => p.name === name);
+  if (existing) {
+    existing.mix = { ...mix };
+    soundState.presetId = existing.id;
+    toast(`已更新预设：${name}`);
+  } else {
+    const id = `custom-${Date.now()}`;
+    soundState.custom.push({ id, name, mix });
+    soundState.presetId = id;
+    toast(`已保存预设：${name}`);
+  }
+  input.value = "";
+  closePresetModal();
+  persistSoundState();
+  renderSoundPresets();
+  markActiveSoundPreset();
+}
+
 function bindSoundControls() {
   $("soundPlayAll").addEventListener("click", () => {
     const hasVolume = SOUNDS.some((s) => (soundState.mix[s.id] || 0) > 0);
@@ -2375,37 +2516,15 @@ function bindSoundControls() {
     toast(soundState.autoplay ? "计时开始时会自动播放当前混音" : "已关闭计时自动播放");
   });
 
-  $("soundPresetSave").addEventListener("click", () => {
-    const input = $("soundPresetName");
-    const name = input.value.trim().slice(0, 12);
-    const mix = {};
-    SOUNDS.forEach((sound) => {
-      if ((soundState.mix[sound.id] || 0) > 0) mix[sound.id] = soundState.mix[sound.id];
-    });
-    if (!name) {
-      toast("先给这套环境起个名字");
-      input.focus();
-      return;
-    }
-    if (!Object.keys(mix).length) {
-      toast("先把至少一个声音的音量调高");
-      return;
-    }
-    const existing = soundState.custom.find((p) => p.name === name);
-    if (existing) {
-      existing.mix = { ...mix };
-      soundState.presetId = existing.id;
-      toast(`已更新预设：${name}`);
-    } else {
-      const id = `custom-${Date.now()}`;
-      soundState.custom.push({ id, name, mix });
-      soundState.presetId = id;
-      toast(`已保存预设：${name}`);
-    }
-    input.value = "";
-    persistSoundState();
-    renderSoundPresets();
-    markActiveSoundPreset();
+  $("openPresetModal").addEventListener("click", openPresetModal);
+  $("presetModalCancel").addEventListener("click", closePresetModal);
+  $("presetModalSave").addEventListener("click", savePresetFromModal);
+  $("presetModalName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") savePresetFromModal();
+    if (e.key === "Escape") closePresetModal();
+  });
+  $("presetModal").addEventListener("click", (e) => {
+    if (e.target.id === "presetModal") closePresetModal();
   });
 
   window.addEventListener("focus-timer", () => {

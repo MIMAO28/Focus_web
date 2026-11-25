@@ -238,7 +238,9 @@
       const name = String(body.name || "").trim();
       if (!name) fail("项目名称不能为空");
       if (name.length > 40) fail("项目名称不超过 40 个字");
-      const color = PALETTE[user.projects.length % PALETTE.length];
+      const color = PALETTE.includes(body.color)
+        ? body.color
+        : PALETTE[user.projects.length % PALETTE.length];
       user.projects.push({ id: user.nextProjectId++, name, color, created_at: nowSec() });
       save(state);
       return { projects: projectsOf(user) };

@@ -409,7 +409,9 @@
       const name = String(body.name || "").trim();
       if (!name) fail("项目名称不能为空");
       if (name.length > 40) fail("项目名称不超过 40 个字");
-      const color = PALETTE[data.projects.length % PALETTE.length];
+      const color = PALETTE.includes(body.color)
+        ? body.color
+        : PALETTE[data.projects.length % PALETTE.length];
       await authed("/rest/v1/focus_projects", {
         method: "POST",
         body: { user_id: currentUser().id, name, color },
