@@ -18,28 +18,34 @@
 <div id="toast" class="toast" hidden></div>
 
 <main id="authView" class="auth" hidden>
-  <div class="auth-poster" id="authPoster">
-    <div class="poster-top">
-      <span class="badge">STUDY CLUB</span>
-      <span class="badge badge-dark">EST. 2026</span>
+  <section class="auth-visual">
+    <div class="auth-scene" id="authScene" tabindex="0" role="button" aria-label="点击画面投一颗赞，按回车也可以">
+      <img id="posterStill" src="/static/character/crispe-still.png" width="767" height="517" alt="围着围巾、拿着杯子的角色，身旁有猫和社交画板">
+      <canvas id="posterCanvas" width="900" height="607" aria-hidden="true"></canvas>
+      <div class="scene-heart" id="sceneHeart" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false"><path d="M16 27.6C13.4 25.6 4.4 19.3 4.4 12.8 4.4 9 7.3 6.4 10.6 6.4c2 0 3.8 1.1 5.4 3 1.6-1.9 3.4-3 5.4-3 3.3 0 6.2 2.6 6.2 6.4 0 6.5-9 12.8-11.6 14.8z"/></svg>
+      </div>
     </div>
-    <div class="auth-tools">
-      <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
-      <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
-    </div>
-    <div class="poster-head">
+  </section>
+
+  <section class="auth-panel">
+    <header class="auth-brand">
+      <div class="brand-row">
+        <div class="poster-top">
+          <span class="badge">STUDY CLUB</span>
+          <span class="badge badge-dark">EST. 2026</span>
+        </div>
+        <div class="auth-tools">
+          <button id="themeBtnAuth" class="theme-fab" type="button">◐ 主题</button>
+          <button id="modeBtnAuth" class="theme-fab icon-fab" type="button" aria-label="切换到暗色" title="切换到暗色"></button>
+        </div>
+      </div>
       <h1 class="poster-title">FOCUS<span class="bang">!</span><em>deeper.</em></h1>
       <p class="poster-sub">番茄钟 · 正计时 · 项目分开累计<br>每一分钟都算数。</p>
-      <p class="poster-credit">角色与场景 <a href="https://rive.app/marketplace/17818-33452-begging-for-likes-on-instagram/" target="_blank" rel="noopener">Crispe / Chris Phillips《Begging for Likes on Instagram》</a><br><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · <span id="posterSceneHint">正在加载动态场景</span></p>
-    </div>
-    <div class="poster-scene" id="posterScene">
-      <img id="posterStill" src="/static/character/crispe-still.png" width="767" height="517" alt="围着围巾、拿着杯子的角色，身旁有猫和社交画板">
-      <canvas id="posterCanvas" width="900" height="607" tabindex="0" role="button" aria-label="投一颗赞：点击画面或按回车"></canvas>
-      <div class="poster-scene-fade" aria-hidden="true"></div>
-    </div>
-  </div>
+      <p class="scene-status" id="posterSceneHint">正在加载动态场景</p>
+    </header>
 
-  <div class="auth-card">
+    <div class="auth-card">
     <div class="tabs">
       <button class="tab active" data-auth-tab="login" type="button">登录</button>
       <button class="tab" data-auth-tab="register" type="button">注册</button>
@@ -60,6 +66,7 @@
       <button id="resendBtn" class="link-btn" type="button" hidden>没收到验证邮件？重新发送</button>
     </form>
   </div>
+  </section>
 </main>
 
 <div id="appView" hidden>
@@ -443,6 +450,7 @@
       <span class="foot-note">FOCUS! · 保持专注</span>
       <span class="foot-mark">FOCUS<span>!</span></span>
     </div>
+    <p class="foot-credit">登录场景：<a href="https://rive.app/marketplace/17818-33452-begging-for-likes-on-instagram/" target="_blank" rel="noopener">Crispe / Chris Phillips《Begging for Likes on Instagram》</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>
   </footer>
 </div>
 

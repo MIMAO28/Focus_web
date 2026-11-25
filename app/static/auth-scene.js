@@ -1,34 +1,42 @@
 /* FOCUS! 登录页左侧：Crispe《Begging for Likes on Instagram》的 Rive 场景
    原作：Crispe / Chris Phillips，CC BY 4.0
-   - 先显示静态图，页面空闲后再加载 Rive 运行时，失败时保持静态图
-   - 整块海报都可交互：指针移动触发 Tracking，按下立即投一颗赞
+   - 静态图先出现，空闲后加载 Rive 运行时；失败时保持静态图
+   - 爱心跟随鼠标，点击后沿弧线飞进杯子，到达时触发人物反应
    - 登录后暂停，避免后台继续渲染 */
 (() => {
-  const poster = document.getElementById("authPoster");
-  const scene = document.getElementById("posterScene");
-  if (!poster || !scene) return;
+  const scene = document.getElementById("authScene");
+  if (!scene) return;
   const canvas = document.getElementById("posterCanvas");
   const hint = document.getElementById("posterSceneHint");
+  const cursorHeart = document.getElementById("sceneHeart");
+  const heartHTML = cursorHeart ? cursorHeart.innerHTML : "";
   const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const conn = navigator.connection || null;
   const saveData = !!(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || "")));
   const scriptSrc = document.currentScript ? document.currentScript.src : location.href;
-  const DPR_CAP = 1; // 场景是扁平插画，1x 足够，显著降低每帧填充成本
-  const TRACK_GAP = 140; // 指针移动触发跟踪的最小间隔
-  const HEART_GAP = 50; // 连点保护，不丢正常点击
+  const DPR_CAP = 1; // 扁平插画 1x 足够，减少每帧填充
+  const TRACK_GAP = 130; // 跟踪触发间隔
+  const FLIGHT_MS = 620; // 爱心飞行时长
+  const MAX_FLIGHTS = 3; // 同时飞行的爱心上限
+  const CUP = { x: 0.572, y: 0.462 }; // 杯口中心（场景百分比，已按画面校准）
 
   let instance = null;
   let inputs = [];
   let loading = false;
   let loaded = false;
   let active = true;
-  let lastTrack = 0;
-  let lastHeart = 0;
-  let hearts = 0;
-  let tracks = 0;
-  let moveQueued = false;
-  let resizeObserver = null;
   let destroyed = false;
+  let rafId = 0;
+  let resizeObserver = null;
+  let pointer = null;
+  let heartShown = false;
+  const heartPos = { x: 0, y: 0 };
+  let trackPending = false;
+  let lastTrack = 0;
+  let flights = [];
+  let tosses = 0;
+  let landed = 0;
+  let tracks = 0;
 
   function setHint(text) {
     if (hint) hint.textContent = text;
@@ -38,8 +46,7 @@
     const input = inputs.find((item) => item.name === name);
     if (!input || typeof input.fire !== "function") return;
     input.fire();
-    if (name === "Heart Pressed Main") hearts += 1;
-    else tracks += 1;
+    if (name === "Tracking Trigger") tracks += 1;
   }
 
   function baseUrl() {
@@ -66,7 +73,7 @@
             inputs = instance.stateMachineInputs("SM BFL Main") || [];
             loaded = true;
             scene.classList.add("is-live");
-            setHint("点击画面投一颗赞");
+            setHint("点击左侧画面投一颗赞");
             if (resizeObserver) resizeObserver.disconnect();
             resizeObserver = new ResizeObserver(() => {
               if (instance) instance.resizeDrawingSurfaceToCanvas(DPR_CAP);
@@ -74,7 +81,7 @@
             resizeObserver.observe(scene);
             if (!active || document.hidden) instance.pause();
           } catch (err) {
-            setHint("点击画面投一颗赞");
+            setHint("点击左侧画面投一颗赞");
           }
         },
         onLoadError: () => {
@@ -102,62 +109,160 @@
     document.head.appendChild(script);
   }
 
-  function isControl(target) {
-    return !!(target && target.closest && target.closest("button, a, input, label, select, textarea"));
+  function sceneRect() {
+    return scene.getBoundingClientRect();
   }
 
-  function onPointerMove() {
-    if (!instance || moveQueued) return;
-    moveQueued = true;
-    requestAnimationFrame(() => {
-      moveQueued = false;
-      const now = performance.now();
-      if (now - lastTrack < TRACK_GAP) return;
-      lastTrack = now;
+  function showHeart(x, y) {
+    if (!cursorHeart || reduceMotion) return;
+    heartPos.x = x;
+    heartPos.y = y;
+    cursorHeart.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    cursorHeart.classList.add("is-visible");
+    scene.classList.add("has-heart");
+    heartShown = true;
+  }
+
+  function hideHeart() {
+    if (!cursorHeart) return;
+    cursorHeart.classList.remove("is-visible");
+    scene.classList.remove("has-heart");
+    heartShown = false;
+  }
+
+  function makeFlight() {
+    let flight = flights.find((item) => item.done);
+    if (!flight && flights.length >= MAX_FLIGHTS) {
+      flight = flights.reduce((oldest, item) => (item.t0 <= oldest.t0 ? item : oldest), flights[0]);
+    }
+    if (!flight) {
+      const el = document.createElement("div");
+      el.className = "scene-heart is-flight";
+      el.setAttribute("aria-hidden", "true");
+      el.innerHTML = heartHTML;
+      scene.appendChild(el);
+      flight = {
+        el,
+        done: true,
+        t0: 0,
+        start: { x: 0, y: 0 },
+        ctrl: { x: 0, y: 0 },
+        end: { x: 0, y: 0 },
+      };
+      flights.push(flight);
+    }
+    return flight;
+  }
+
+  function toss(from) {
+    tosses += 1;
+    if (reduceMotion) return;
+    const rect = sceneRect();
+    const start = from || { x: rect.width / 2, y: rect.height * 0.62 };
+    const end = { x: rect.width * CUP.x, y: rect.height * CUP.y };
+    const ctrl = {
+      x: (start.x + end.x) / 2,
+      y: Math.min(start.y, end.y) - Math.max(60, rect.height * 0.22),
+    };
+    const flight = makeFlight();
+    flight.start = start;
+    flight.ctrl = ctrl;
+    flight.end = end;
+    flight.t0 = performance.now();
+    flight.done = false;
+    flight.el.style.opacity = "1";
+    flight.el.style.transform = `translate3d(${start.x}px, ${start.y}px, 0) scale(1)`;
+    flight.el.classList.add("is-visible");
+    if (!instance) loadRuntime();
+  }
+
+  function tick(now) {
+    rafId = requestAnimationFrame(tick);
+    if (heartShown && pointer && cursorHeart) {
+      heartPos.x += (pointer.x - heartPos.x) * 0.3;
+      heartPos.y += (pointer.y - heartPos.y) * 0.3;
+      cursorHeart.style.transform = `translate3d(${heartPos.x}px, ${heartPos.y}px, 0)`;
+    }
+    if (trackPending) {
+      trackPending = false;
+      if (instance && now - lastTrack >= TRACK_GAP) {
+        lastTrack = now;
+        fire("Tracking Trigger");
+      }
+    }
+    for (let i = 0; i < flights.length; i += 1) {
+      const flight = flights[i];
+      if (flight.done) continue;
+      const t = Math.min(1, (now - flight.t0) / FLIGHT_MS);
+      const u = 1 - t;
+      const x = u * u * flight.start.x + 2 * u * t * flight.ctrl.x + t * t * flight.end.x;
+      const y = u * u * flight.start.y + 2 * u * t * flight.ctrl.y + t * t * flight.end.y;
+      const scale = 1 - 0.45 * t;
+      const rotate = (t - 0.5) * 18;
+      flight.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotate(${rotate}deg)`;
+      flight.el.style.opacity = t > 0.82 ? String(Math.max(0, (1 - t) / 0.18)) : "1";
+      if (t >= 1) {
+        flight.done = true;
+        flight.el.classList.remove("is-visible");
+        fire("Heart Pressed Main");
+        landed += 1;
+      }
+    }
+  }
+
+  function startTick() {
+    if (!rafId && !reduceMotion) rafId = requestAnimationFrame(tick);
+  }
+
+  function stopTick() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  function onEnter(e) {
+    if (reduceMotion) return;
+    const rect = sceneRect();
+    pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    showHeart(pointer.x, pointer.y);
+    if (!instance) loadRuntime();
+    else if (performance.now() - lastTrack >= TRACK_GAP) {
+      lastTrack = performance.now();
       fire("Tracking Trigger");
-    });
+    }
   }
 
-  function onPointerEnter() {
-    if (!instance) {
-      loadRuntime();
-      return;
-    }
-    const now = performance.now();
-    if (now - lastTrack < TRACK_GAP) return;
-    lastTrack = now;
-    fire("Tracking Trigger");
+  function onMove(e) {
+    if (reduceMotion) return;
+    const rect = sceneRect();
+    pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    if (!heartShown) showHeart(pointer.x, pointer.y);
+    trackPending = true;
+    if (!instance) loadRuntime();
   }
 
-  function onPointerDown(e) {
-    if (isControl(e.target)) return;
-    if (!instance) {
-      loadRuntime();
-      return;
+  function onLeave() {
+    pointer = null;
+    hideHeart();
+  }
+
+  function onDown(e) {
+    if (reduceMotion) return;
+    const rect = sceneRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (!heartShown) showHeart(x, y);
+    toss({ x: heartPos.x, y: heartPos.y });
+    if (e.pointerType === "touch") {
+      pointer = null;
+      setTimeout(hideHeart, 220);
     }
-    const now = performance.now();
-    if (now - lastHeart < HEART_GAP) return;
-    lastHeart = now;
-    fire("Heart Pressed Main");
     e.preventDefault();
   }
 
   function onKey(e) {
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if (!instance) {
-      loadRuntime();
-      return;
-    }
-    fire("Heart Pressed Main");
-  }
-
-  function onFocus() {
-    poster.classList.add("is-scene-focused");
-  }
-
-  function onBlur() {
-    poster.classList.remove("is-scene-focused");
+    toss(null);
   }
 
   function onVisibility() {
@@ -168,42 +273,58 @@
 
   function setActive(value) {
     active = !!value;
-    if (!instance) return;
-    if (active && !document.hidden) instance.play();
-    else instance.pause();
+    if (instance) {
+      if (active && !document.hidden) instance.play();
+      else instance.pause();
+    }
+    if (active) startTick();
+    else stopTick();
   }
 
   function destroy() {
     destroyed = true;
+    stopTick();
     if (resizeObserver) resizeObserver.disconnect();
-    poster.removeEventListener("pointerenter", onPointerEnter);
-    poster.removeEventListener("pointermove", onPointerMove);
-    poster.removeEventListener("pointerdown", onPointerDown);
-    canvas.removeEventListener("keydown", onKey);
-    canvas.removeEventListener("focus", onFocus);
-    canvas.removeEventListener("blur", onBlur);
+    scene.removeEventListener("pointerenter", onEnter);
+    scene.removeEventListener("pointermove", onMove);
+    scene.removeEventListener("pointerleave", onLeave);
+    scene.removeEventListener("pointerdown", onDown);
+    scene.removeEventListener("keydown", onKey);
     document.removeEventListener("visibilitychange", onVisibility);
+    flights.forEach((flight) => flight.el.remove());
+    flights = [];
     if (instance) instance.cleanup();
     instance = null;
   }
 
-  poster.addEventListener("pointerenter", onPointerEnter);
-  poster.addEventListener("pointermove", onPointerMove);
-  poster.addEventListener("pointerdown", onPointerDown);
-  canvas.addEventListener("keydown", onKey);
-  canvas.addEventListener("focus", onFocus);
-  canvas.addEventListener("blur", onBlur);
+  scene.addEventListener("pointerenter", onEnter);
+  scene.addEventListener("pointermove", onMove);
+  scene.addEventListener("pointerleave", onLeave);
+  scene.addEventListener("pointerdown", onDown);
+  scene.addEventListener("keydown", onKey);
   document.addEventListener("visibilitychange", onVisibility);
 
   if (reduceMotion) setHint("静态画面（已遵循系统的减少动态设置）");
   else if (saveData) setHint("静态画面（已按省流设置关闭动态）");
-  else setTimeout(loadRuntime, 700);
+  else {
+    startTick();
+    setTimeout(loadRuntime, 700);
+  }
 
   window.FocusAuthScene = {
     setActive,
     destroy,
     get state() {
-      return { ready: loaded, active, reduced: reduceMotion, saveData, dpr: DPR_CAP, hearts, tracks };
+      return {
+        ready: loaded,
+        active,
+        reduced: reduceMotion,
+        saveData,
+        dpr: DPR_CAP,
+        tosses,
+        landed,
+        tracks,
+      };
     },
   };
 })();
