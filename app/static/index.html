@@ -60,7 +60,7 @@
 <div id="appView" hidden>
   <header class="topbar">
     <div class="nav-shell">
-      <a class="logo" href="#timer">FOCUS<span>!</span></a>
+      <a class="logo" href="#home">FOCUS<span>!</span></a>
       <nav class="nav" aria-label="页面切换">
         <a href="#timer" class="active" aria-current="page">计时</a>
         <a href="#sound">环境音</a>
@@ -80,6 +80,91 @@
       </div>
     </div>
   </header>
+
+  <div id="view-home" class="view" hidden>
+  <section class="home-hero">
+    <div class="home-board">
+      <div class="home-copy">
+        <span class="eyebrow">YOUR FOCUS SPACE</span>
+        <h1 class="home-title">FOCUS<em>starts here.</em></h1>
+        <p class="home-sub">先选一个入口，再开始今天的专注。我会在这里陪你把这一段时间用完。</p>
+        <div class="home-actions">
+          <a class="btn-primary" href="#timer">开始专注</a>
+          <a class="ghost" href="#sound">先放点环境音</a>
+        </div>
+        <div class="home-stats">
+          <div><strong id="homeToday">0 分</strong><span>今日专注</span></div>
+          <div><strong id="homeWeek">0 分</strong><span>本周专注</span></div>
+          <div><strong id="homeProjects">0 个</strong><span>进行中项目</span></div>
+        </div>
+      </div>
+
+      <div class="home-character">
+        <div class="star-scene-card">
+          <div class="star-scene-top">
+            <span class="star-scene-tag">LIVE SCENE</span>
+            <button id="starPause" class="star-scene-pause" type="button">暂停动效</button>
+          </div>
+          <div class="star-scene-stage">
+            <canvas id="starScene" width="800" height="550" tabindex="0" role="button" aria-label="点击画面投一颗星，按空格或回车也可以"></canvas>
+            <img id="starSceneFallback" class="star-scene-fallback" alt="FOCUS 学习伙伴的求星场景" hidden>
+            <span class="star-scene-hint">点击画面 / 空格 · 投一颗星</span>
+          </div>
+        </div>
+        <p class="character-caption">MIMAO-01 · 你的学习伙伴</p>
+        <p class="character-credit">场景参考 Crispe《Begging for Likes on Instagram》/ Rive · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-choices">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">CHOOSE A ROOM</span>
+        <h2>今天从哪里开始？</h2>
+      </div>
+      <span class="home-choice-note">六个入口，互不打扰</span>
+    </div>
+    <div class="home-grid">
+      <a class="home-card" href="#timer">
+        <span class="home-card-no">01</span>
+        <h3>专注计时</h3>
+        <p>25 分钟倒计时，或自由正计时。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+      <a class="home-card" href="#sound">
+        <span class="home-card-no">02</span>
+        <h3>学习环境音</h3>
+        <p>雨声、咖啡馆、图书馆，自由混音。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+      <a class="home-card" href="#todo">
+        <span class="home-card-no">03</span>
+        <h3>待办清单</h3>
+        <p>把今天要做的事写下来，一件件划掉。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+      <a class="home-card" href="#room">
+        <span class="home-card-no">04</span>
+        <h3>好友自习室</h3>
+        <p>发个邀请码，和朋友一起专注。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+      <a class="home-card" href="#stats">
+        <span class="home-card-no">05</span>
+        <h3>专注统计</h3>
+        <p>今日、本周与连续打卡，一眼看到进度。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+      <a class="home-card" href="#profile">
+        <span class="home-card-no">06</span>
+        <h3>个人资料</h3>
+        <p>头像、昵称、每日目标与默认专注时长。</p>
+        <span class="home-card-go">进入 →</span>
+      </a>
+    </div>
+  </section>
+  </div>
 
   <div id="view-timer" class="view">
   <section class="hero-wrap">
@@ -557,7 +642,8 @@
   </div>
 </div>
 
-<script>window.FOCUS_AUDIO_BASE = "/static/audio/";</script>
+<script>window.FOCUS_AUDIO_BASE = "/static/audio/"; window.FOCUS_CHARACTER_BASE = "/static/character/";</script>
+<script src="/static/character/star-scene.js"></script>
 <script src="/static/theme.js"></script>
 <script src="/static/app.js"></script>
 <script type="module" src="/static/room.js"></script>

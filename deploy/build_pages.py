@@ -48,6 +48,7 @@ def main():
     html = html.replace('<script src="./app.js"></script>', scripts)
     html = html.replace('src="./app.js"', 'src="./app.js?v=%s"' % version)
     html = html.replace('src="./room.js"', 'src="./room.js?v=%s"' % version)
+    html = html.replace('src="./character/star-scene.js"', 'src="./character/star-scene.js?v=%s"' % version)
     html = html.replace("FOCUS! · 保持专注", footer)
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 
@@ -58,6 +59,9 @@ def main():
     audio_src = os.path.join(SRC, "audio")
     if os.path.isdir(audio_src):
         shutil.copytree(audio_src, os.path.join(OUT, "audio"))
+    character_src = os.path.join(SRC, "character")
+    if os.path.isdir(character_src):
+        shutil.copytree(character_src, os.path.join(OUT, "character"))
     open(os.path.join(OUT, ".nojekyll"), "w", encoding="utf-8").write("")
 
     print("built site/ (%s): %s" % ("cloud" if cloud else "local", ", ".join(sorted(os.listdir(OUT)))))
