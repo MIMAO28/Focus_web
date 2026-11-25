@@ -5,7 +5,9 @@
    - 登录后暂停，避免后台继续渲染 */
 (() => {
   const scene = document.getElementById("authScene");
-  if (!scene) return;
+  const poster = document.getElementById("authPoster");
+  const art = document.getElementById("sceneArt");
+  if (!scene || !poster || !art) return;
   const canvas = document.getElementById("posterCanvas");
   const hint = document.getElementById("posterSceneHint");
   const cursorHeart = document.getElementById("sceneHeart");
@@ -81,7 +83,7 @@
             resizeObserver = new ResizeObserver(() => {
               if (instance) instance.resizeDrawingSurfaceToCanvas(dprCap());
             });
-            resizeObserver.observe(scene);
+            resizeObserver.observe(art);
             if (!active || document.hidden) instance.pause();
           } catch (err) {
             setHint("点击左侧画面投一颗赞");
@@ -122,14 +124,14 @@
     heartPos.y = y;
     cursorHeart.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     cursorHeart.classList.add("is-visible");
-    scene.classList.add("has-heart");
+    poster.classList.add("has-heart");
     heartShown = true;
   }
 
   function hideHeart() {
     if (!cursorHeart) return;
     cursorHeart.classList.remove("is-visible");
-    scene.classList.remove("has-heart");
+    poster.classList.remove("has-heart");
     heartShown = false;
   }
 
@@ -161,8 +163,11 @@
     tosses += 1;
     if (reduceMotion) return;
     const rect = sceneRect();
-    const start = from || { x: rect.width / 2, y: rect.height * 0.62 };
-    const end = { x: rect.width * CUP.x, y: rect.height * CUP.y };
+    const artRect = art.getBoundingClientRect();
+    const artX = artRect.left - rect.left;
+    const artY = artRect.top - rect.top;
+    const start = from || { x: artX + artRect.width / 2, y: artY + artRect.height * 0.72 };
+    const end = { x: artX + artRect.width * CUP.x, y: artY + artRect.height * CUP.y };
     const ctrl = {
       x: (start.x + end.x) / 2,
       y: Math.min(start.y, end.y) - Math.max(60, rect.height * 0.22),
@@ -248,8 +253,12 @@
     hideHeart();
   }
 
+  function isControl(target) {
+    return !!(target && target.closest && target.closest("button, a, input, label, select, textarea"));
+  }
+
   function onDown(e) {
-    if (reduceMotion) return;
+    if (reduceMotion || isControl(e.target)) return;
     const rect = sceneRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -288,10 +297,10 @@
     destroyed = true;
     stopTick();
     if (resizeObserver) resizeObserver.disconnect();
-    scene.removeEventListener("pointerenter", onEnter);
-    scene.removeEventListener("pointermove", onMove);
-    scene.removeEventListener("pointerleave", onLeave);
-    scene.removeEventListener("pointerdown", onDown);
+    poster.removeEventListener("pointerenter", onEnter);
+    poster.removeEventListener("pointermove", onMove);
+    poster.removeEventListener("pointerleave", onLeave);
+    poster.removeEventListener("pointerdown", onDown);
     scene.removeEventListener("keydown", onKey);
     document.removeEventListener("visibilitychange", onVisibility);
     flights.forEach((flight) => flight.el.remove());
@@ -300,10 +309,10 @@
     instance = null;
   }
 
-  scene.addEventListener("pointerenter", onEnter);
-  scene.addEventListener("pointermove", onMove);
-  scene.addEventListener("pointerleave", onLeave);
-  scene.addEventListener("pointerdown", onDown);
+  poster.addEventListener("pointerenter", onEnter);
+  poster.addEventListener("pointermove", onMove);
+  poster.addEventListener("pointerleave", onLeave);
+  poster.addEventListener("pointerdown", onDown);
   scene.addEventListener("keydown", onKey);
   document.addEventListener("visibilitychange", onVisibility);
 
