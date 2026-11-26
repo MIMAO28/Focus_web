@@ -81,12 +81,62 @@
     return new URL("character/", scriptSrc);
   }
 
-  function boot(wasmUrl, rivUrl) {
+  // 运行时资源（2MB 的 wasm 等）放进 Cache Storage：10 分钟后就过期重新下载太慢，
+  // 这里按构建版本缓存，第二次打开直接命中本地缓存，动画几乎立刻开始
+  const CACHE_NAME = "focus-rive-assets";
+  const assetVersion = new URLSearchParams(scriptSrc.split("?")[1] || "").get("v") || "";
+
+  function assetUrl(name) {
+    const url = new URL(name, baseUrl());
+    if (assetVersion) url.searchParams.set("v", assetVersion);
+    return url.href;
+  }
+
+  async function loadAsset(url) {
+    if (!("caches" in window)) return fetch(url);
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const hit = await cache.match(url);
+      if (hit) return hit;
+      const res = await fetch(url);
+      if (res.ok) cache.put(url, res.clone()).catch(() => {});
+      return res;
+    } catch (err) {
+      return fetch(url);
+    }
+  }
+
+  async function loadAssets() {
+    const urls = [assetUrl("rive.js"), assetUrl("rive.wasm"), assetUrl("crispe-scene.riv")];
+    const [jsRes, wasmRes, rivRes] = await Promise.all(urls.map(loadAsset));
+    if (!jsRes.ok || !wasmRes.ok || !rivRes.ok) throw new Error("资源加载失败");
+    const [jsText, wasmBuf, rivBuf] = await Promise.all([jsRes.text(), wasmRes.arrayBuffer(), rivRes.arrayBuffer()]);
+    // 清掉旧版本构建留下的缓存，避免越攒越多
+    if ("caches" in window) {
+      caches
+        .open(CACHE_NAME)
+        .then(async (cache) => {
+          const keys = await cache.keys();
+          keys.forEach((req) => {
+            if (!urls.includes(req.url)) cache.delete(req);
+          });
+        })
+        .catch(() => {});
+    }
+    return { jsText, wasmBuf, rivBuf };
+  }
+
+  function boot(assets) {
     if (destroyed || instance) return;
     try {
-      window.rive.RuntimeLoader.setWasmUrl(wasmUrl);
+      if (!window.rive) {
+        const script = document.createElement("script");
+        script.textContent = assets.jsText;
+        document.head.appendChild(script);
+      }
+      window.rive.RuntimeLoader.setWasmBinary(assets.wasmBuf);
       instance = new window.rive.Rive({
-        src: rivUrl,
+        buffer: assets.rivBuf,
         canvas,
         autoplay: true,
         artboard: "BFL_AB_InteractionMain",
@@ -123,18 +173,20 @@
     }
   }
 
-  function loadRuntime() {
+  async function loadRuntime() {
     if (STATIC_ONLY || instance || loading || destroyed || reduceMotion || saveData) return;
     loading = true;
-    const base = baseUrl();
-    const script = document.createElement("script");
-    script.src = new URL("rive.js", base).href;
-    script.onload = () => boot(new URL("rive.wasm", base).href, new URL("crispe-scene.riv", base).href);
-    script.onerror = () => {
+    try {
+      const assets = await loadAssets();
+      if (destroyed) {
+        loading = false;
+        return;
+      }
+      boot(assets);
+    } catch (err) {
       loading = false;
       setHint("动态场景加载失败，当前为静态画面");
-    };
-    document.head.appendChild(script);
+    }
   }
 
   function sceneRect() {
@@ -356,7 +408,7 @@
   else if (saveData) setHint("静态画面（已按省流设置关闭动态）");
   else {
     startTick();
-    setTimeout(loadRuntime, 700);
+    setTimeout(loadRuntime, 150);
   }
 
   window.FocusAuthScene = {
