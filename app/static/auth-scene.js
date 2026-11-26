@@ -1,7 +1,7 @@
 /* FOCUS! 登录页左侧：Crispe《Begging for Likes on Instagram》的 Rive 场景
    原作：Crispe / Chris Phillips，CC BY 4.0
    - 静态图先出现，空闲后加载 Rive 运行时；失败时保持静态图
-   - 爱心跟随鼠标，点击后沿弧线飞进杯子，到达时触发人物反应
+   - 爱心跟随鼠标，点击后沿弧线飞进杯子，到达时画面轻顿一下
    - 登录后暂停，避免后台继续渲染 */
 (() => {
   const scene = document.getElementById("authScene");
@@ -24,7 +24,7 @@
   const FLIGHT_MS = 620; // 爱心飞行时长
   const MAX_FLIGHTS = 3; // 同时飞行的爱心上限
   const CUP = { x: 0.572, y: 0.462 }; // 杯口中心（场景百分比，已按画面校准）
-  const STATIC_ONLY = true; // 原动画里杯子上的爱心是固定图层、不跟随杯子，这里只保留静态插画
+  const STATIC_ONLY = false; // 保留 Rive 动画
 
   let instance = null;
   let inputs = [];
@@ -49,7 +49,7 @@
     if (hint) hint.textContent = text;
   }
 
-  // 爱心落到杯口时，画面轻轻一顿作为反馈
+  // 爱心落到杯口时画面轻顿一下
   let bumpTimer = 0;
   function bump() {
     if (reduceMotion) return;
@@ -235,7 +235,6 @@
       if (t >= 1) {
         flight.done = true;
         flight.el.classList.remove("is-visible");
-        fire("Heart Pressed Main");
         bump();
         landed += 1;
       }
