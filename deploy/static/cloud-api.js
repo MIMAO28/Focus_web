@@ -9,6 +9,10 @@
   const KEY = cfg.key;
   const SKEY = "focus.cloud.session.v1";
   const PALETTE = ["#FF3B2F", "#C6FF3D", "#FFD166", "#7BD389", "#8AB6FF", "#FF8FC7"];
+  const CACHE_KEY = "focus.cloud.payload.v1"; // 登录时的本地快照，用来秒进界面
+  const PAYLOAD_TTL = 4000; // 内存缓存有效期，避免紧挨着的重复请求
+  const CACHE_MAX_AGE = 7 * 24 * 3600 * 1000;
+  let payloadCache = null; // { id, at, data }
 
   function fail(message, status = 400, code = "") {
     const err = new Error(message);
@@ -58,6 +62,42 @@
   function currentUser() {
     const session = loadSession();
     return session && session.user ? session.user : null;
+  }
+
+  // 最近一次成功拉取的个人数据快照：登录 / 启动时先用它渲染，再后台刷新
+  function readCache(userId) {
+    let raw = null;
+    try {
+      raw = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    } catch (e) {
+      raw = null;
+    }
+    if (!raw || !raw.data || !raw.id) return null;
+    if (userId && raw.id !== userId) return null;
+    if (Date.now() - Number(raw.at || 0) > CACHE_MAX_AGE) return null;
+    return raw.data;
+  }
+
+  function writeCache(userId, data) {
+    payloadCache = { id: userId, at: Date.now(), data };
+    const rest = { ...data };
+    delete rest.sessions; // 全部记录不写进 localStorage
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ id: userId, at: payloadCache.at, data: rest }));
+    } catch (e) {
+      /* 空间不足时只保留内存缓存 */
+    }
+  }
+
+  // 后台拉最新数据；app.js 通过 window.FocusCloudApi.pending 拿到结果后补渲染
+  function beginRefresh() {
+    const task = payload(true);
+    window.FocusCloudApi.pending = task;
+    const clear = () => {
+      if (window.FocusCloudApi.pending === task) window.FocusCloudApi.pending = null;
+    };
+    task.then(clear, clear);
+    return task;
   }
 
   async function raw(path, options = {}) {
@@ -272,12 +312,15 @@
     }));
   }
 
-  async function payload() {
+  async function payload(force = false) {
     const user = currentUser();
     if (!user) fail("请先登录", 401);
+    if (!force && payloadCache && payloadCache.id === user.id && Date.now() - payloadCache.at < PAYLOAD_TTL) {
+      return payloadCache.data;
+    }
     const { projects, sessions } = await fetchAll();
     const meta = user.user_metadata || {};
-    return {
+    const data = {
       email: user.email,
       username: meta.username || "",
       avatar: meta.avatar || "🙂",
@@ -290,6 +333,8 @@
       projects: projectStats(projects, sessions),
       sessions,
     };
+    writeCache(user.id, data);
+    return data;
   }
 
   window.FocusCloudApi = async function (path, options = {}) {
@@ -330,7 +375,13 @@
         body: { email: String(body.email || "").trim().toLowerCase(), password: String(body.password || "") },
       });
       await storeSession(data);
-      return payload();
+      // 有本机快照时先用旧数据进界面，再后台补最新数据，避免登录后长时间等待
+      const cached = readCache(data.user && data.user.id);
+      if (cached) {
+        beginRefresh();
+        return cached;
+      }
+      return payload(true);
     }
 
     if (path === "/api/logout" && method === "POST") {
@@ -347,7 +398,13 @@
     }
 
     if (path === "/api/me" && method === "GET") {
-      return payload();
+      const me = currentUser();
+      const cached = me ? readCache(me.id) : null;
+      if (cached) {
+        beginRefresh();
+        return cached;
+      }
+      return payload(true);
     }
 
     if (path === "/api/profile" && method === "PATCH") {
@@ -389,20 +446,28 @@
         session.user = updated;
         saveSession(session);
       }
-      return payload();
+      return payload(true);
     }
 
+    // 登录/启动时后台刷新还没回来，读接口先等它，避免拿到没有明细的旧快照
+    if (window.FocusCloudApi.pending) {
+      try {
+        await window.FocusCloudApi.pending;
+      } catch (e) {
+        /* 刷新失败就用现有数据 */
+      }
+    }
     const data = await payload();
     if (path === "/api/projects" && method === "GET") return { projects: data.projects };
     if (path === "/api/stats" && method === "GET") return {
       stats: data.stats,
       projects: data.projects,
-      sessions: recentSessions(data.projects, data.sessions, 20),
+      sessions: recentSessions(data.projects, data.sessions || [], 20),
     };
     if (path.startsWith("/api/sessions") && method === "GET") {
       const params = new URLSearchParams(path.split("?")[1] || "");
       const limit = Math.max(1, Math.min(Number(params.get("limit") || 20), 1000));
-      return { sessions: recentSessions(data.projects, data.sessions, limit) };
+      return { sessions: recentSessions(data.projects, data.sessions || [], limit) };
     }
 
     if (path === "/api/projects" && method === "POST") {
@@ -417,7 +482,7 @@
         body: { user_id: currentUser().id, name, color },
         headers: { Prefer: "return=representation" },
       });
-      const next = await payload();
+      const next = await payload(true);
       return { projects: next.projects };
     }
 
@@ -434,13 +499,13 @@
           body: { name },
           headers: { Prefer: "return=representation" },
         });
-        const next = await payload();
+        const next = await payload(true);
         return { projects: next.projects };
       }
       if (method === "DELETE") {
         if (data.projects.length <= 1) fail("至少保留一个项目");
         await authed(`/rest/v1/focus_projects?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
-        const next = await payload();
+        const next = await payload(true);
         return { projects: next.projects };
       }
     }
@@ -466,7 +531,7 @@
         },
         headers: { Prefer: "return=representation" },
       });
-      const next = await payload();
+      const next = await payload(true);
       return {
         ok: true,
         project: project.name,

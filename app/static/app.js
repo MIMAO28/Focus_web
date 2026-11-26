@@ -133,12 +133,16 @@ $("authForm").addEventListener("submit", async (e) => {
   const password = $("password").value;
   const username = $("username").value.trim();
   const hint = $("authHint");
+  const submit = $("authSubmit");
+  if (submit.disabled) return;
   hint.classList.remove("error");
   if (authMode === "register" && (username.length < 2 || username.length > 20)) {
     hint.textContent = "用户名请填 2-20 个字符";
     hint.classList.add("error");
     return;
   }
+  submit.disabled = true;
+  submit.textContent = authMode === "login" ? "登录中…" : "注册中…";
   try {
     const data = await api(authMode === "login" ? "/api/login" : "/api/register", {
       method: "POST",
@@ -146,6 +150,7 @@ $("authForm").addEventListener("submit", async (e) => {
     });
     hint.textContent = "";
     enterApp(data);
+    applyPendingRefresh();
     toast(authMode === "login" ? "欢迎回来" : "注册成功，已登录");
   } catch (err) {
     if (err.code === "EMAIL_CONFIRM") {
@@ -159,6 +164,9 @@ $("authForm").addEventListener("submit", async (e) => {
     }
     hint.textContent = err.message;
     hint.classList.add("error");
+  } finally {
+    submit.disabled = false;
+    submit.textContent = authMode === "login" ? "登录" : "注册并登录";
   }
 });
 
@@ -409,6 +417,42 @@ function enterApp(me) {
   renderTimer();
   applyDefaultDuration();
   showView(currentView(), { scroll: false });
+}
+
+/* 后台刷新回来的最新数据：只更新数据与渲染，不动计时器等运行状态 */
+function applyRemote(me) {
+  if (!me || !me.email || $("authView").hidden === false) return;
+  user = {
+    email: me.email,
+    username: me.username || "",
+    created_at: me.created_at,
+    createdAt: me.created_at,
+  };
+  profile = {
+    username: me.username || "",
+    avatar: me.avatar || "🙂",
+    avatarUrl: me.avatarUrl || "",
+    bio: me.bio || "",
+    goalMinutes: Number(me.goalMinutes) || 0,
+    defaultMinutes: Number(me.defaultMinutes) || 25,
+  };
+  stats = me.stats || stats;
+  projects = me.projects || projects;
+  renderUserChip();
+  renderProfile();
+  renderProjects();
+  renderStats();
+  loadSessions();
+}
+
+/* 登录/启动时先用本地快照秒进界面，等云端最新数据到了再补一次渲染 */
+function applyPendingRefresh() {
+  const cloud = window.FocusCloudApi;
+  const pending = cloud && cloud.pending;
+  if (!pending || typeof pending.then !== "function") return;
+  pending.then(applyRemote).catch((err) => {
+    if (err && err.status === 401) showAuth(); // 会话已过期：退回登录页
+  });
 }
 
 /* ---------------- 个人资料 ---------------- */
@@ -2745,6 +2789,7 @@ $("feedbackText").addEventListener("input", () => {
   try {
     const me = await api("/api/me");
     enterApp(me);
+    applyPendingRefresh();
   } catch (err) {
     showAuth();
   }

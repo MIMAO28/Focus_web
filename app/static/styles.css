@@ -77,6 +77,8 @@ button, input, select { font-family: inherit; color: inherit; }
   box-shadow: 0 4px 0 var(--shadow-soft);
 }
 .btn-primary:hover { background: var(--red); transform: translateY(2px); box-shadow: 0 2px 0 var(--shadow-soft); }
+.btn-primary:disabled { opacity: .65; cursor: progress; transform: none; box-shadow: 0 4px 0 var(--shadow-soft); }
+.btn-primary:disabled:hover { background: var(--ink); transform: none; box-shadow: 0 4px 0 var(--shadow-soft); }
 
 .btn-dark { background: var(--yellow); color: var(--card1-fg); box-shadow: 0 4px 0 var(--shadow-soft); }
 .btn-dark:hover { filter: brightness(.95); transform: translateY(2px); box-shadow: 0 2px 0 var(--shadow-soft); }
