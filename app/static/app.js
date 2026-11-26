@@ -422,6 +422,7 @@ function enterApp(me) {
 /* 后台刷新回来的最新数据：只更新数据与渲染，不动计时器等运行状态 */
 function applyRemote(me) {
   if (!me || !me.email || $("authView").hidden === false) return;
+  if (!user || me.email !== user.email) return; // 期间切换了账号就丢弃这次结果
   user = {
     email: me.email,
     username: me.username || "",
